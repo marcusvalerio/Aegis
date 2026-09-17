@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { getSnapshot, countSnapshotItems } from "@/lib/checklist-engine";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { ChecklistItemCard } from "@/components/checklist/ChecklistItemCard";
+import { ForkliftMedia } from "@/components/ForkliftMedia";
 import { finalizeChecklistAction } from "@/lib/actions/checklist";
 import type { AnswerValue, Severity } from "@/lib/types";
 
@@ -35,21 +36,36 @@ export default async function ChecklistRuntimePage({ params }: { params: Promise
 
   return (
     <main className="mx-auto max-w-2xl pb-28">
-      <div className="border-b border-black/10 bg-white px-4 py-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="font-display text-lg font-bold text-black">{checklist.forklift.code}</p>
-            <p className="font-aux text-xs text-black/60">
+      <div className="sticky top-0 z-10 border-b border-black/10 bg-white px-4 py-4">
+        <div className="flex items-center gap-3">
+          <div className="h-11 w-11 shrink-0 border border-black/10 bg-tan">
+            <ForkliftMedia
+              imageUrl={checklist.forklift.imageUrl}
+              typeKey={checklist.forklift.forkliftType.key}
+              alt={checklist.forklift.code}
+              fit="contain"
+              className="h-full w-full p-1 text-black/70"
+            />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="font-display text-base font-bold leading-tight text-black">
+              {checklist.forklift.code}
+            </p>
+            <p className="truncate font-aux text-xs text-black/50">
               {checklist.forklift.brand} {checklist.forklift.model} · {snapshot.energyTypeName}
             </p>
           </div>
-          <div className="text-right">
-            <p className="font-aux text-[11px] uppercase tracking-widest text-black/40">Checklist</p>
-            <p className="font-display text-sm font-bold text-black">{totalItems} itens</p>
+          <div className="shrink-0 text-right">
+            <p className="font-display text-sm font-bold tabular-nums text-black">
+              {answeredCount}/{totalItems}
+            </p>
+            <p className="font-aux text-[10px] uppercase tracking-widest text-black/40">
+              {totalItems === 0 ? 0 : Math.round((answeredCount / totalItems) * 100)}%
+            </p>
           </div>
         </div>
         <div className="mt-3">
-          <ProgressBar value={answeredCount} total={totalItems} />
+          <ProgressBar value={answeredCount} total={totalItems} compact />
         </div>
       </div>
 

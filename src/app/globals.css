@@ -28,8 +28,72 @@ body {
   background-size: 22px 22px;
 }
 
+.dot-grid-inverse {
+  background-image: radial-gradient(#ffffff26 1px, transparent 1px);
+  background-size: 22px 22px;
+}
+
+/* Accessibility: a single, consistent focus signal everywhere — yellow ring
+   reads on both black and tan/white surfaces, so it never disappears
+   depending on context. Only shows for keyboard focus, not mouse clicks. */
+:focus-visible {
+  outline: 2px solid #fffb26;
+  outline-offset: 2px;
+}
+
 @layer components {
   .input {
     @apply w-full border border-black/20 bg-white px-3 py-2.5 font-aux text-sm text-black outline-none focus:border-black;
+  }
+}
+
+@layer utilities {
+  .animate-fade-in {
+    animation: fade-in 200ms ease-out;
+  }
+  .animate-rise-in {
+    animation: rise-in 240ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .animate-pop-in {
+    animation: pop-in 180ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-in,
+  .animate-rise-in,
+  .animate-pop-in {
+    animation: none;
   }
 }

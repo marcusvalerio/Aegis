@@ -25,11 +25,12 @@ export default async function ChecklistConfigPage() {
         Configuração do checklist
       </h1>
       <p className="mt-1 max-w-2xl font-aux text-sm text-black/60">
-        Este é o checklist-base pronto para uso. Você pode complementar com novas
-        categorias e perguntas, e vincular uma pergunta a um tipo de empilhadeira
-        ou energia específicos — o sistema monta automaticamente o checklist de
-        cada equipamento a partir daqui. Checklists já finalizados não são
-        afetados por essas mudanças (snapshot preservado).
+        O checklist de cada equipamento é montado automaticamente a partir daqui:{" "}
+        <strong className="font-semibold text-black">checklist-base</strong> +{" "}
+        <strong className="font-semibold text-black">perguntas personalizadas</strong> +{" "}
+        <strong className="font-semibold text-black">regras condicionais</strong> por
+        tipo de empilhadeira ou energia. Checklists já finalizados não são afetados
+        por mudanças futuras — o snapshot de cada inspeção é preservado.
       </p>
 
       <div className="mt-8 grid grid-cols-1 gap-8 xl:grid-cols-[1fr_360px]">
@@ -48,20 +49,34 @@ export default async function ChecklistConfigPage() {
                     <div>
                       <p className="font-sans text-sm font-semibold text-black">{item.label}</p>
                       <p className="mt-0.5 font-aux text-xs text-black/60">{item.question}</p>
-                      <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                      <div className="mt-2 flex flex-wrap items-center gap-1.5">
                         <SeverityBadge severity={item.defaultSeverity as Severity} />
-                        {!item.appliesToAllTypes &&
-                          item.typeLinks.map((l) => (
-                            <span key={l.id} className="border border-black/15 px-1.5 py-0.5 font-aux text-[10px] uppercase text-black/50">
-                              {l.forkliftType.name}
-                            </span>
-                          ))}
-                        {!item.appliesToAllEnergies &&
-                          item.energyLinks.map((l) => (
-                            <span key={l.id} className="border border-black/15 px-1.5 py-0.5 font-aux text-[10px] uppercase text-black/50">
-                              {l.energyType.name}
-                            </span>
-                          ))}
+                        {item.appliesToAllTypes && item.appliesToAllEnergies ? (
+                          <span className="border border-black/15 px-1.5 py-0.5 font-aux text-[10px] font-medium uppercase tracking-wide text-black/40">
+                            Todos os equipamentos
+                          </span>
+                        ) : (
+                          <>
+                            {!item.appliesToAllTypes &&
+                              item.typeLinks.map((l) => (
+                                <span
+                                  key={l.id}
+                                  className="border border-yellow bg-yellow/20 px-1.5 py-0.5 font-aux text-[10px] font-semibold uppercase tracking-wide text-black/80"
+                                >
+                                  Se tipo = {l.forkliftType.name}
+                                </span>
+                              ))}
+                            {!item.appliesToAllEnergies &&
+                              item.energyLinks.map((l) => (
+                                <span
+                                  key={l.id}
+                                  className="border border-yellow bg-yellow/20 px-1.5 py-0.5 font-aux text-[10px] font-semibold uppercase tracking-wide text-black/80"
+                                >
+                                  Se energia = {l.energyType.name}
+                                </span>
+                              ))}
+                          </>
+                        )}
                         {item.requiresPhoto === "OBRIGATORIA_NC" && (
                           <span className="border border-black/15 px-1.5 py-0.5 font-aux text-[10px] uppercase text-black/50">
                             Foto obrigatória em NC

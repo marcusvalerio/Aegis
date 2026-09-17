@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
-import { StatTile } from "@/components/ui/Card";
+import { Metric, MetricRow } from "@/components/ui/Card";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { SeverityBadge, NonConformityStatusBadge } from "@/components/ui/StatusBadge";
 import { NonConformityActions } from "@/components/admin/NonConformityActions";
 import type { NonConformityStatus, Severity } from "@/lib/types";
@@ -23,48 +24,50 @@ export default async function NaoConformidadesPage() {
         Não conformidades
       </h1>
 
-      <div className="mt-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <StatTile label="Abertas" value={abertas} tone="red" />
-        <StatTile label="Em tratamento" value={emTratamento} />
-        <StatTile label="Resolvidas" value={resolvidas} tone="green" />
-        <StatTile label="Críticas" value={criticas} tone="red" />
+      <div className="mt-6">
+        <MetricRow>
+          <Metric label="Abertas" value={abertas} tone={abertas > 0 ? "red" : "black"} />
+          <Metric label="Em tratamento" value={emTratamento} tone="yellow" />
+          <Metric label="Resolvidas" value={resolvidas} tone="green" />
+          <Metric label="Críticas" value={criticas} tone={criticas > 0 ? "red" : "black"} />
+        </MetricRow>
       </div>
 
-      <div className="mt-6 overflow-x-auto border border-black/10 bg-white">
-        <table className="w-full text-left">
-          <thead>
-            <tr className="border-b border-black/10 font-aux text-[11px] uppercase tracking-widest text-black/50">
-              <th className="px-4 py-3">Data</th>
-              <th className="px-4 py-3">Empilhadeira</th>
-              <th className="px-4 py-3">Item</th>
-              <th className="px-4 py-3">Descrição</th>
-              <th className="px-4 py-3">Gravidade</th>
-              <th className="px-4 py-3">Status</th>
-              <th className="px-4 py-3">Ações</th>
-            </tr>
-          </thead>
-          <tbody>
-            {list.map((nc) => (
-              <tr key={nc.id} className="border-b border-black/5 last:border-0 hover:bg-tan/40">
-                <td className="px-4 py-3 font-aux text-sm text-black/70">{nc.createdAt.toLocaleDateString("pt-BR")}</td>
-                <td className="px-4 py-3 font-sans text-sm font-semibold text-black">{nc.forklift.code}</td>
-                <td className="px-4 py-3 font-aux text-sm text-black/70">{nc.itemLabel}</td>
-                <td className="max-w-xs px-4 py-3 font-aux text-sm text-black/70 line-clamp-1">{nc.description}</td>
-                <td className="px-4 py-3"><SeverityBadge severity={nc.severity as Severity} /></td>
-                <td className="px-4 py-3"><NonConformityStatusBadge status={nc.status as NonConformityStatus} /></td>
-                <td className="px-4 py-3"><NonConformityActions id={nc.id} status={nc.status as NonConformityStatus} /></td>
+      {list.length === 0 ? (
+        <div className="mt-6">
+          <EmptyState title="Nenhuma não conformidade registrada" description="Ocorrências aparecem aqui assim que um operador reportar um item não conforme." />
+        </div>
+      ) : (
+        <div className="mt-6 overflow-x-auto border border-black/10 bg-white">
+          <table className="w-full text-left">
+            <caption className="sr-only">Lista de não conformidades registradas</caption>
+            <thead>
+              <tr className="border-b border-black/10 font-aux text-[11px] uppercase tracking-widest text-black/50">
+                <th scope="col" className="px-4 py-3">Data</th>
+                <th scope="col" className="px-4 py-3">Empilhadeira</th>
+                <th scope="col" className="px-4 py-3">Item</th>
+                <th scope="col" className="px-4 py-3">Descrição</th>
+                <th scope="col" className="px-4 py-3">Gravidade</th>
+                <th scope="col" className="px-4 py-3">Status</th>
+                <th scope="col" className="px-4 py-3">Ações</th>
               </tr>
-            ))}
-            {list.length === 0 && (
-              <tr>
-                <td colSpan={7} className="px-4 py-10 text-center font-aux text-sm text-black/50">
-                  Nenhuma não conformidade registrada.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody>
+              {list.map((nc) => (
+                <tr key={nc.id} className="border-b border-black/5 last:border-0 hover:bg-tan/40">
+                  <td className="px-4 py-3 font-aux text-sm text-black/70">{nc.createdAt.toLocaleDateString("pt-BR")}</td>
+                  <td className="px-4 py-3 font-sans text-sm font-semibold text-black">{nc.forklift.code}</td>
+                  <td className="px-4 py-3 font-aux text-sm text-black/70">{nc.itemLabel}</td>
+                  <td className="max-w-xs px-4 py-3 font-aux text-sm text-black/70 line-clamp-1">{nc.description}</td>
+                  <td className="px-4 py-3"><SeverityBadge severity={nc.severity as Severity} /></td>
+                  <td className="px-4 py-3"><NonConformityStatusBadge status={nc.status as NonConformityStatus} /></td>
+                  <td className="px-4 py-3"><NonConformityActions id={nc.id} status={nc.status as NonConformityStatus} /></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </main>
   );
 }

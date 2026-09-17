@@ -1,31 +1,31 @@
 import clsx from "clsx";
 
-export function Card({ className, children }: { className?: string; children: React.ReactNode }) {
-  return (
-    <div className={clsx("border border-black/10 bg-white", className)}>{children}</div>
-  );
+export function MetricRow({ children }: { children: React.ReactNode }) {
+  return <div className="flex flex-wrap divide-x divide-black/10 border-y border-black/10">{children}</div>;
 }
 
-export function StatTile({
+const METRIC_TONE = {
+  black: "text-black",
+  green: "text-green",
+  red: "text-red",
+  yellow: "text-black",
+} as const;
+
+export function Metric({
   label,
   value,
   tone = "black",
 }: {
   label: string;
   value: React.ReactNode;
-  tone?: "black" | "green" | "red" | "yellow";
+  tone?: keyof typeof METRIC_TONE;
 }) {
-  const toneClass = {
-    black: "text-black",
-    green: "text-green",
-    red: "text-red",
-    yellow: "text-black",
-  }[tone];
-
   return (
-    <div className="border border-black/10 bg-white p-6">
-      <div className={clsx("font-display text-5xl font-bold tabular-nums", toneClass)}>{value}</div>
-      <div className="mt-2 font-aux text-xs font-medium uppercase tracking-widest text-black/60">
+    <div className="flex-1 px-6 py-5 first:pl-0">
+      <div className={clsx("font-display text-4xl font-bold tabular-nums lg:text-5xl", METRIC_TONE[tone])}>
+        {value}
+      </div>
+      <div className="mt-1.5 font-aux text-xs font-medium uppercase tracking-widest text-black/50">
         {label}
       </div>
     </div>

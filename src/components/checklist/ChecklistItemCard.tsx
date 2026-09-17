@@ -3,8 +3,9 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import clsx from "clsx";
-import { Check, X, Minus, Camera } from "lucide-react";
+import { Check, X, Minus, Camera, ImageUp } from "lucide-react";
 import { answerItemAction, registerNonConformityAction } from "@/lib/actions/checklist";
+import { Spinner } from "@/components/ui/Spinner";
 import type { AnswerValue, Severity, SnapshotItem } from "@/lib/types";
 
 interface Props {
@@ -19,7 +20,12 @@ interface Props {
   };
 }
 
-const SEVERITY_OPTIONS: Severity[] = ["BAIXA", "MEDIA", "ALTA", "CRITICA"];
+const SEVERITY_OPTIONS: { value: Severity; label: string }[] = [
+  { value: "BAIXA", label: "Baixa" },
+  { value: "MEDIA", label: "Média" },
+  { value: "ALTA", label: "Alta" },
+  { value: "CRITICA", label: "Crítica" },
+];
 
 export function ChecklistItemCard({
   checklistId,
@@ -35,9 +41,11 @@ export function ChecklistItemCard({
   const [answerId, setAnswerId] = useState<string | undefined>(currentAnswerId);
   const [showNcForm, setShowNcForm] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [photoName, setPhotoName] = useState<string | null>(null);
 
   async function selectAnswer(value: AnswerValue) {
     setError(null);
+    const previous = answer;
     setAnswer(value);
     startTransition(async () => {
       try {
@@ -57,6 +65,7 @@ export function ChecklistItemCard({
           router.refresh();
         }
       } catch (e) {
+        setAnswer(previous);
         setError(e instanceof Error ? e.message : "Erro ao registrar resposta.");
       }
     });
@@ -78,53 +87,36 @@ export function ChecklistItemCard({
     });
   }
 
-  const isDone = answer === "CONFORME" || answer === "NA" || (answer === "NAO_CONFORME" && !showNcForm);
-
   return (
-    <div className={clsx("border-b border-black/10 py-5", isDone && "opacity-100")}>
+    <div className="border-b border-black/10 py-5">
       <p className="font-sans text-sm font-semibold text-black">{item.label}</p>
-      <p className="mt-1 font-aux text-sm text-black/60">{item.question}</p>
+      <p className="mt-1 font-aux text-sm leading-relaxed text-black/60">{item.question}</p>
 
       <div className="mt-3 grid grid-cols-3 gap-2">
-        <button
-          type="button"
+        <AnswerButton
+          active={answer === "CONFORME"}
+          activeClass="border-green bg-green text-black"
+          icon={<Check size={16} strokeWidth={3} />}
+          label="Conforme"
           disabled={isPending}
           onClick={() => selectAnswer("CONFORME")}
-          className={clsx(
-            "flex items-center justify-center gap-1.5 border py-3 text-xs font-semibold uppercase tracking-wide transition-colors",
-            answer === "CONFORME"
-              ? "border-green bg-green text-black"
-              : "border-black/20 bg-white text-black/70 hover:border-green",
-          )}
-        >
-          <Check size={14} strokeWidth={3} /> Conforme
-        </button>
-        <button
-          type="button"
+        />
+        <AnswerButton
+          active={answer === "NAO_CONFORME"}
+          activeClass="border-red bg-red text-white"
+          icon={<X size={16} strokeWidth={3} />}
+          label="Não conforme"
           disabled={isPending}
           onClick={() => selectAnswer("NAO_CONFORME")}
-          className={clsx(
-            "flex items-center justify-center gap-1.5 border py-3 text-xs font-semibold uppercase tracking-wide transition-colors",
-            answer === "NAO_CONFORME"
-              ? "border-red bg-red text-white"
-              : "border-black/20 bg-white text-black/70 hover:border-red",
-          )}
-        >
-          <X size={14} strokeWidth={3} /> Não conforme
-        </button>
-        <button
-          type="button"
+        />
+        <AnswerButton
+          active={answer === "NA"}
+          activeClass="border-black bg-black text-white"
+          icon={<Minus size={16} strokeWidth={3} />}
+          label="N/A"
           disabled={isPending}
           onClick={() => selectAnswer("NA")}
-          className={clsx(
-            "flex items-center justify-center gap-1.5 border py-3 text-xs font-semibold uppercase tracking-wide transition-colors",
-            answer === "NA"
-              ? "border-black bg-black text-white"
-              : "border-black/20 bg-white text-black/70 hover:border-black",
-          )}
-        >
-          <Minus size={14} strokeWidth={3} /> N/A
-        </button>
+        />
       </div>
 
       {error && <p className="mt-2 font-aux text-xs text-red">{error}</p>}
@@ -133,19 +125,21 @@ export function ChecklistItemCard({
         <button
           type="button"
           onClick={() => setShowNcForm(true)}
-          className="mt-3 flex w-full items-center justify-between border border-red/40 bg-red/5 px-3 py-2 text-left"
+          className="mt-3 flex w-full items-center justify-between border border-red/30 bg-red/5 px-3 py-2.5 text-left transition-colors hover:bg-red/10"
         >
           <span className="font-aux text-xs text-black/70 line-clamp-1">
             {existingNonConformity.description}
           </span>
-          <span className="font-aux text-[10px] font-semibold uppercase text-red">Editar</span>
+          <span className="ml-2 shrink-0 font-aux text-[10px] font-semibold uppercase text-red">Editar</span>
         </button>
       )}
 
       {showNcForm && (
-        <form action={submitNonConformity} className="mt-4 border border-red bg-red/5 p-4">
-          <p className="font-display text-sm font-bold uppercase text-red">Não conformidade</p>
-          <p className="mt-0.5 font-aux text-xs text-black/60">{item.label}</p>
+        <form action={submitNonConformity} className="animate-rise-in mt-4 border-l-2 border-red bg-red/[0.04] p-4">
+          <p className="font-display text-xs font-bold uppercase tracking-wide text-red">
+            Não conformidade
+          </p>
+          <p className="mt-0.5 font-aux text-xs text-black/50">{item.label}</p>
 
           <label className="mt-3 block font-aux text-xs font-medium text-black/70">
             Descreva o problema {item.requiresNote && <span className="text-red">*</span>}
@@ -163,30 +157,34 @@ export function ChecklistItemCard({
           <div className="mt-1.5 grid grid-cols-4 gap-1.5">
             {SEVERITY_OPTIONS.map((s) => (
               <label
-                key={s}
-                className="flex cursor-pointer items-center justify-center border border-black/20 py-2 text-[11px] font-semibold uppercase has-[:checked]:border-black has-[:checked]:bg-black has-[:checked]:text-white"
+                key={s.value}
+                className="flex min-h-[44px] cursor-pointer items-center justify-center border border-black/20 px-1 text-center font-aux text-[11px] font-semibold uppercase leading-tight transition-colors has-[:checked]:border-black has-[:checked]:bg-black has-[:checked]:text-white"
               >
                 <input
                   type="radio"
                   name="severity"
-                  value={s}
-                  defaultChecked={(existingNonConformity?.severity ?? item.defaultSeverity) === s}
+                  value={s.value}
+                  defaultChecked={(existingNonConformity?.severity ?? item.defaultSeverity) === s.value}
                   className="sr-only"
                 />
-                {s}
+                {s.label}
               </label>
             ))}
           </div>
 
-          <label className="mt-3 flex cursor-pointer items-center justify-center gap-2 border border-black/20 bg-white py-3 font-aux text-xs font-medium text-black/70">
-            <Camera size={16} />
-            {item.requiresPhoto === "OBRIGATORIA_NC" ? "Adicionar foto (obrigatória)" : "Adicionar foto"}
+          <label className="mt-3 flex min-h-[52px] cursor-pointer items-center justify-center gap-2 border border-black/20 bg-white px-3 py-3 font-aux text-xs font-medium text-black/70 transition-colors hover:border-black/40">
+            {photoName ? <ImageUp size={16} className="text-green" /> : <Camera size={16} />}
+            <span className="truncate">
+              {photoName ??
+                (item.requiresPhoto === "OBRIGATORIA_NC" ? "Adicionar foto (obrigatória)" : "Adicionar foto")}
+            </span>
             <input
               type="file"
               name="photo"
               accept="image/*"
               capture="environment"
               required={item.requiresPhoto === "OBRIGATORIA_NC"}
+              onChange={(e) => setPhotoName(e.target.files?.[0]?.name ?? null)}
               className="hidden"
             />
           </label>
@@ -194,12 +192,45 @@ export function ChecklistItemCard({
           <button
             type="submit"
             disabled={isPending}
-            className="mt-3 w-full bg-black py-3 font-sans text-xs font-semibold uppercase tracking-wide text-white disabled:opacity-50"
+            className="mt-3 flex min-h-[52px] w-full items-center justify-center gap-2 bg-black font-sans text-xs font-semibold uppercase tracking-wide text-white transition-colors hover:bg-black/85 disabled:opacity-50"
           >
-            Registrar
+            {isPending && <Spinner />}
+            {isPending ? "Registrando..." : "Registrar"}
           </button>
         </form>
       )}
     </div>
+  );
+}
+
+function AnswerButton({
+  active,
+  activeClass,
+  icon,
+  label,
+  disabled,
+  onClick,
+}: {
+  active: boolean;
+  activeClass: string;
+  icon: React.ReactNode;
+  label: string;
+  disabled: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      disabled={disabled}
+      onClick={onClick}
+      aria-pressed={active}
+      className={clsx(
+        "flex min-h-[52px] flex-col items-center justify-center gap-1 border text-[11px] font-semibold uppercase leading-tight tracking-wide transition-all active:scale-[0.97] disabled:opacity-60",
+        active ? activeClass : "border-black/20 bg-white text-black/70 hover:border-black/40",
+      )}
+    >
+      {icon}
+      {label}
+    </button>
   );
 }
