@@ -1,0 +1,264 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Access control
+// ---------------------------------------------------------------------------
+
+/// role: "ADMIN" | "OPERADOR"
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         String
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+
+  checklists    Checklist[]
+  auditLogs     AuditLog[]
+  resolvedNCs   NonConformity[] @relation("ResolvedBy")
+  createdItems  ChecklistItem[] @relation("ItemCreatedBy")
+  updatedItems  ChecklistItem[] @relation("ItemUpdatedBy")
+}
+
+// ---------------------------------------------------------------------------
+// Equipment master data
+// ---------------------------------------------------------------------------
+
+/// key: "CONTRABALANCADA" | "RETRATIL" | "PALETEIRA_ELETRICA" | "PALETEIRA_MANUAL" | ...
+model ForkliftType {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  name        String
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  forklifts       Forklift[]
+  itemLinks       ChecklistItemForkliftType[]
+}
+
+/// key: "ELETRICA" | "GLP" | "DIESEL" | "GASOLINA"
+model EnergyType {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  name      String
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  forklifts  Forklift[]
+  itemLinks  ChecklistItemEnergyType[]
+}
+
+/// status: "LIBERADA" | "RESTRICAO" | "BLOQUEADA"
+model Forklift {
+  id             String   @id @default(cuid())
+  code           String   @unique
+  brand          String
+  model          String
+  serialNumber   String?
+  forkliftTypeId String
+  energyTypeId   String
+  capacityKg     Int
+  hourmeter      Float    @default(0)
+  status         String   @default("LIBERADA")
+  imageUrl       String?
+  notes          String?
+  active         Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  forkliftType ForkliftType @relation(fields: [forkliftTypeId], references: [id])
+  energyType   EnergyType   @relation(fields: [energyTypeId], references: [id])
+  checklists   Checklist[]
+  nonConformities   NonConformity[]
+  maintenanceOccurrences MaintenanceOccurrence[]
+}
+
+// ---------------------------------------------------------------------------
+// Checklist template (mutable configuration, versioned via snapshots)
+// ---------------------------------------------------------------------------
+
+model ChecklistCategory {
+  id        String   @id @default(cuid())
+  name      String
+  order     Int      @default(0)
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  items ChecklistItem[]
+}
+
+/// requiresPhoto: "NUNCA" | "OPCIONAL" | "OBRIGATORIA_NC"
+/// defaultSeverity: "BAIXA" | "MEDIA" | "ALTA" | "CRITICA"
+model ChecklistItem {
+  id                String   @id @default(cuid())
+  categoryId        String
+  label             String
+  question          String
+  order             Int      @default(0)
+  active            Boolean  @default(true)
+  appliesToAllTypes   Boolean @default(true)
+  appliesToAllEnergies Boolean @default(true)
+  requiresPhoto     String   @default("OPCIONAL")
+  requiresNote      Boolean  @default(true)
+  defaultSeverity   String   @default("MEDIA")
+  createdById       String?
+  updatedById       String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  category      ChecklistCategory @relation(fields: [categoryId], references: [id])
+  createdBy     User? @relation("ItemCreatedBy", fields: [createdById], references: [id])
+  updatedBy     User? @relation("ItemUpdatedBy", fields: [updatedById], references: [id])
+  typeLinks     ChecklistItemForkliftType[]
+  energyLinks   ChecklistItemEnergyType[]
+}
+
+model ChecklistItemForkliftType {
+  id             String @id @default(cuid())
+  itemId         String
+  forkliftTypeId String
+
+  item         ChecklistItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  forkliftType ForkliftType  @relation(fields: [forkliftTypeId], references: [id], onDelete: Cascade)
+
+  @@unique([itemId, forkliftTypeId])
+}
+
+model ChecklistItemEnergyType {
+  id           String @id @default(cuid())
+  itemId       String
+  energyTypeId String
+
+  item       ChecklistItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  energyType EnergyType    @relation(fields: [energyTypeId], references: [id], onDelete: Cascade)
+
+  @@unique([itemId, energyTypeId])
+}
+
+/// severity: "BAIXA" | "MEDIA" | "ALTA" | "CRITICA"
+/// effect: "PERMITE" | "RESTRINGE" | "BLOQUEIA"
+model SeverityRule {
+  id       String @id @default(cuid())
+  severity String @unique
+  effect   String
+}
+
+// ---------------------------------------------------------------------------
+// Executed checklists (immutable once finished; snapshot-based)
+// ---------------------------------------------------------------------------
+
+/// status: "EM_ANDAMENTO" | "CONCLUIDO"
+/// resultStatus: "LIBERADA" | "RESTRICAO" | "BLOQUEADA"
+model Checklist {
+  id               String    @id @default(cuid())
+  forkliftId       String
+  operatorId       String
+  hourmeter        Float?
+  status           String    @default("EM_ANDAMENTO")
+  resultStatus     String?
+  templateSnapshot String
+  totalItems       Int       @default(0)
+  conformCount     Int       @default(0)
+  nonConformCount  Int       @default(0)
+  naCount          Int       @default(0)
+  startedAt        DateTime  @default(now())
+  finishedAt       DateTime?
+
+  forklift  Forklift @relation(fields: [forkliftId], references: [id])
+  operator  User     @relation(fields: [operatorId], references: [id])
+  answers         ChecklistAnswer[]
+  nonConformities NonConformity[]
+}
+
+/// answer: "CONFORME" | "NAO_CONFORME" | "NA"
+model ChecklistAnswer {
+  id             String   @id @default(cuid())
+  checklistId    String
+  snapshotItemId String
+  categoryName   String
+  itemLabel      String
+  question       String
+  answer         String
+  answeredAt     DateTime @default(now())
+
+  checklist      Checklist @relation(fields: [checklistId], references: [id], onDelete: Cascade)
+  nonConformity  NonConformity?
+
+  @@unique([checklistId, snapshotItemId])
+}
+
+// ---------------------------------------------------------------------------
+// Non-conformities & occurrences
+// ---------------------------------------------------------------------------
+
+/// severity: "BAIXA" | "MEDIA" | "ALTA" | "CRITICA"
+/// status: "ABERTA" | "EM_TRATAMENTO" | "RESOLVIDA" | "CANCELADA"
+model NonConformity {
+  id              String    @id @default(cuid())
+  checklistId     String
+  answerId        String    @unique
+  forkliftId      String
+  itemLabel       String
+  description     String
+  severity        String
+  status          String    @default("ABERTA")
+  createdAt       DateTime  @default(now())
+  resolvedAt      DateTime?
+  resolvedById    String?
+  resolutionNotes String?
+
+  checklist  Checklist       @relation(fields: [checklistId], references: [id], onDelete: Cascade)
+  answer     ChecklistAnswer @relation(fields: [answerId], references: [id], onDelete: Cascade)
+  forklift   Forklift        @relation(fields: [forkliftId], references: [id])
+  resolvedBy User?           @relation("ResolvedBy", fields: [resolvedById], references: [id])
+  attachments Attachment[]
+  maintenanceOccurrence MaintenanceOccurrence?
+}
+
+model Attachment {
+  id              String   @id @default(cuid())
+  nonConformityId String
+  url             String
+  createdAt       DateTime @default(now())
+
+  nonConformity NonConformity @relation(fields: [nonConformityId], references: [id], onDelete: Cascade)
+}
+
+/// status: "ABERTA" | "EM_ANDAMENTO" | "CONCLUIDA"
+model MaintenanceOccurrence {
+  id              String    @id @default(cuid())
+  forkliftId      String
+  nonConformityId String?   @unique
+  description     String
+  status          String    @default("ABERTA")
+  createdAt       DateTime  @default(now())
+  resolvedAt      DateTime?
+
+  forklift      Forklift       @relation(fields: [forkliftId], references: [id])
+  nonConformity NonConformity? @relation(fields: [nonConformityId], references: [id])
+}
+
+// ---------------------------------------------------------------------------
+// Audit trail
+// ---------------------------------------------------------------------------
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  userId     String?
+  entityType String
+  entityId   String
+  action     String
+  changes    String?
+  createdAt  DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id])
+}
