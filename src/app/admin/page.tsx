@@ -152,6 +152,29 @@ export default async function AdminDashboardPage() {
         </MetricRow>
       </div>
 
+      <section className="mt-10 border-l-2 border-yellow bg-black p-5 text-white">
+        <h2 className="font-aux text-[10px] font-semibold uppercase tracking-widest text-yellow">
+          Leitura rápida
+        </h2>
+        {fleet.length > 0 ? (
+          <p className="mt-2 font-display text-lg font-semibold leading-snug">
+            {bloqueadas > 0
+              ? `${bloqueadas} de ${fleet.length} empilhadeiras bloqueadas`
+              : restricao > 0
+                ? `${restricao} de ${fleet.length} empilhadeiras em restrição`
+                : `Frota liberada — ${fleet.length} de ${fleet.length} empilhadeiras operando normalmente`}
+            {topProblems.length > 0
+              ? `. Problema mais frequente nos últimos 30 dias: "${topProblems[0][0]}" (${topProblems[0][1].count}x).`
+              : ". Nenhuma não conformidade registrada nos últimos 30 dias."}
+            {realizados30 > 0 && ` Taxa de conformidade no período: ${taxaConformidade}%.`}
+          </p>
+        ) : (
+          <p className="mt-2 font-aux text-sm text-white/60">
+            Cadastre empilhadeiras para começar a acompanhar o status da frota.
+          </p>
+        )}
+      </section>
+
       <div className="mt-10 grid grid-cols-1 gap-8 xl:grid-cols-[1.35fr_0.65fr]">
         <section className="border border-black/10 bg-white p-5">
           <div className="flex items-end justify-between border-b border-black/10 pb-3">
@@ -218,13 +241,6 @@ export default async function AdminDashboardPage() {
                 </div>
               </div>
             ))}
-          </div>
-
-          <div className="mt-7 border-t border-black/10 pt-4">
-            <p className="font-aux text-[10px] uppercase tracking-widest text-black/40">Leitura rápida</p>
-            <p className="mt-2 font-sans text-sm leading-relaxed text-black/70">
-              {liberadas} de {fleet.length} empilhadeiras ativas estão liberadas para operação.
-            </p>
           </div>
         </section>
       </div>

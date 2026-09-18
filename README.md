@@ -13,8 +13,8 @@ rastreável por equipamento.
   (`ADMIN` / `OPERADOR`), `middleware.ts` protegendo rotas por papel
 - **Armazenamento de fotos** via S3-compatível (R2, S3, etc.) — obrigatório
   em produção, ver `.env.example`
-- **Tailwind CSS** com a paleta e tipografia (Geist Sans, Sora, Inter) do
-  briefing do produto
+- **Tailwind CSS** com a paleta e tipografia (DM Sans para títulos/métricas,
+  Geist para o restante da interface) do briefing do produto
 
 ## Como rodar
 
