@@ -15,8 +15,8 @@ const config: Config = {
       },
       fontFamily: {
         sans: ["var(--font-geist)", "system-ui", "sans-serif"],
-        display: ["var(--font-sora)", "system-ui", "sans-serif"],
-        aux: ["var(--font-inter)", "system-ui", "sans-serif"],
+        display: ["var(--font-dm-sans)", "system-ui", "sans-serif"],
+        aux: ["var(--font-geist)", "system-ui", "sans-serif"],
       },
       borderRadius: {
         sm: "2px",
