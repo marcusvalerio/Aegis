@@ -19,7 +19,8 @@ export default function LoginPage() {
 
         {process.env.SHOW_DEMO_CREDENTIALS === "true" && (
           <div className="mt-8 border-t border-white/10 pt-4 font-aux text-[11px] text-white/30">
-            Ambiente de demonstração — admin@aegis.com / operador@aegis.com (senha: aegis123)
+            Ambiente de demonstração — admin@aegis.com / operador@aegis.com. Senha
+            definida por quem rodou o seed (DEMO_PASSWORD).
           </div>
         )}
       </div>

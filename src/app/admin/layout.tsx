@@ -2,12 +2,14 @@ import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { logoutAction } from "@/lib/actions/auth";
 import { NavLink } from "@/components/admin/NavLink";
+import Link from "next/link";
 import {
   LayoutDashboard,
   Truck,
   ClipboardList,
   AlertTriangle,
   Settings,
+  UserCog,
 } from "lucide-react";
 
 const NAV = [
@@ -16,6 +18,7 @@ const NAV = [
   { href: "/admin/checklists", label: "Checklists", icon: <ClipboardList size={16} aria-hidden="true" /> },
   { href: "/admin/nao-conformidades", label: "Não conformidades", icon: <AlertTriangle size={16} aria-hidden="true" /> },
   { href: "/admin/checklist-config", label: "Config. checklist", icon: <Settings size={16} aria-hidden="true" /> },
+  { href: "/admin/conta", label: "Minha conta", icon: <UserCog size={16} aria-hidden="true" /> },
 ];
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -36,7 +39,9 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           ))}
         </nav>
         <div className="border-t border-white/10 px-5 py-4">
-          <p className="font-aux text-xs text-white/60">{session.user.name}</p>
+          <Link href="/admin/conta" className="font-aux text-xs text-white/60 hover:text-yellow">
+            {session.user.name}
+          </Link>
           <form action={logoutAction}>
             <button className="mt-1 font-aux text-[11px] font-semibold uppercase tracking-wide text-white/40 hover:text-yellow">
               Sair

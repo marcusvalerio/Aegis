@@ -13,17 +13,26 @@ const ADMIN_EMAIL = process.env.ADMIN_EMAIL ?? "admin@aegis.com";
 const ADMIN_NAME = process.env.ADMIN_NAME ?? "Administrador";
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
 
+const MIN_PASSWORD_LENGTH = 12;
+
 async function main() {
-  if (!ADMIN_PASSWORD && !SEED_DEMO_DATA) {
+  // No fallback password, ever — not even in SEED_DEMO_DATA mode. A
+  // hardcoded literal here would be a known credential baked into source
+  // control, exactly the failure mode this seed script must not have.
+  if (!ADMIN_PASSWORD) {
     throw new Error(
-      "ADMIN_PASSWORD não definida. Defina uma senha forte para o admin de bootstrap " +
-        "(ex.: ADMIN_PASSWORD='...' npm run seed), ou rode com SEED_DEMO_DATA=true apenas " +
-        "em ambiente de desenvolvimento/demonstração.",
+      "ADMIN_PASSWORD não definida. Defina uma senha forte para o admin de bootstrap: " +
+        "ADMIN_PASSWORD='...' npm run seed",
     );
   }
+  if (ADMIN_PASSWORD.length < MIN_PASSWORD_LENGTH) {
+    throw new Error(`ADMIN_PASSWORD precisa ter pelo menos ${MIN_PASSWORD_LENGTH} caracteres.`);
+  }
 
-  const adminPasswordHash = await bcrypt.hash(ADMIN_PASSWORD ?? "aegis123", 10);
+  const adminPasswordHash = await bcrypt.hash(ADMIN_PASSWORD, 10);
 
+  // update: {} means an existing admin's passwordHash is never touched by
+  // re-running the seed — only a brand-new row gets this hash.
   const admin = await db.user.upsert({
     where: { email: ADMIN_EMAIL },
     update: {},
@@ -36,7 +45,14 @@ async function main() {
   });
 
   if (SEED_DEMO_DATA) {
-    const demoPasswordHash = await bcrypt.hash("aegis123", 10);
+    const demoPassword = process.env.DEMO_PASSWORD;
+    if (!demoPassword) {
+      throw new Error(
+        "SEED_DEMO_DATA=true requer DEMO_PASSWORD (senha para os operadores de demonstração): " +
+          "DEMO_PASSWORD='...' SEED_DEMO_DATA=true npm run seed",
+      );
+    }
+    const demoPasswordHash = await bcrypt.hash(demoPassword, 10);
     await db.user.upsert({
       where: { email: "operador@aegis.com" },
       update: {},
@@ -308,7 +324,7 @@ async function main() {
   }
 
   console.log("Seed concluído.");
-  console.log(`Admin: ${ADMIN_EMAIL}${ADMIN_PASSWORD ? "" : " / aegis123 (senha padrão de dev — defina ADMIN_PASSWORD em produção)"}`);
+  console.log(`Admin: ${ADMIN_EMAIL} (senha definida via ADMIN_PASSWORD, não exibida).`);
   if (SEED_DEMO_DATA) {
     console.log("Dados de demonstração criados (operadores + 4 empilhadeiras de exemplo).");
   }

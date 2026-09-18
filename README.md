@@ -29,7 +29,12 @@ npm run dev
 Acesse `http://localhost:3000`.
 
 Para um ambiente de demonstração completo (operadores + 4 empilhadeiras de
-exemplo), rode o seed com `SEED_DEMO_DATA=true` — nunca em produção.
+exemplo): `ADMIN_PASSWORD='...' DEMO_PASSWORD='...' SEED_DEMO_DATA=true npm run seed`
+— nunca em produção.
+
+Para trocar a senha de um admin existente sem recriar nada:
+`ADMIN_PASSWORD='nova-senha-forte' npm run admin:reset-password` (use
+`ADMIN_EMAIL` também se houver mais de um admin). Nunca imprime a senha.
 
 ## Deploy em produção
 
@@ -59,7 +64,10 @@ Checklist mínimo:
 8. **Seed de produção**: rode `ADMIN_PASSWORD='...' npm run seed` uma única
    vez contra o banco de produção (sem `SEED_DEMO_DATA`) para criar os dados
    de referência (tipos, checklist-base, regras de gravidade) e a conta
-   admin inicial. Troque a senha assim que possível.
+   admin inicial. Depois disso, o admin troca a própria senha em
+   "Minha conta" — ou, se precisar redefinir de fora, use
+   `ADMIN_PASSWORD='...' npm run admin:reset-password` (nunca cria outro
+   admin, nunca imprime a senha).
 
 ## Arquitetura
 
