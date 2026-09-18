@@ -13,6 +13,8 @@ export async function updateNonConformityStatusAction(
 ) {
   const session = await requireAdmin();
 
+  const nc = await db.nonConformity.findFirst({ where: { id, organizationId: session.user.organizationId } });
+  if (!nc) throw new Error("Não conformidade não encontrada.");
   await db.nonConformity.update({
     where: { id },
     data: {

@@ -19,18 +19,18 @@ async function requireOperatorSession() {
 export async function startChecklistAction(forkliftId: string) {
   const session = await requireOperatorSession();
 
-  const forklift = await db.forklift.findUnique({ where: { id: forkliftId } });
+  const forklift = await db.forklift.findFirst({ where: { id: forkliftId, organizationId: session.user.organizationId } });
   if (!forklift || !forklift.active) {
     throw new Error("Empilhadeira não encontrada ou inativa.");
   }
 
   const existing = await db.checklist.findFirst({
-    where: { forkliftId, operatorId: session.user.id, status: "EM_ANDAMENTO" },
+    where: { forkliftId, operatorId: session.user.id, organizationId: session.user.organizationId, status: "EM_ANDAMENTO" },
   });
 
   const { checklist } = existing
     ? { checklist: existing }
-    : await startChecklist(forkliftId, session.user.id);
+    : await startChecklist(forkliftId, session.user.id, session.user.organizationId);
 
   redirect(`/operador/checklist/${checklist.id}`);
 }
@@ -45,8 +45,8 @@ export async function answerItemAction(input: {
 }) {
   const session = await requireOperatorSession();
 
-  const checklist = await db.checklist.findUnique({ where: { id: input.checklistId } });
-  if (!checklist || checklist.operatorId !== session.user.id) {
+  const checklist = await db.checklist.findFirst({ where: { id: input.checklistId, operatorId: session.user.id, organizationId: session.user.organizationId } });
+  if (!checklist) {
     throw new Error("Checklist não encontrado.");
   }
   if (checklist.status !== "EM_ANDAMENTO") {
@@ -89,8 +89,8 @@ export async function registerNonConformityAction(formData: FormData) {
   const severity = String(formData.get("severity")) as Severity;
   const photo = formData.get("photo") as File | null;
 
-  const checklist = await db.checklist.findUnique({ where: { id: checklistId } });
-  if (!checklist || checklist.operatorId !== session.user.id) {
+  const checklist = await db.checklist.findFirst({ where: { id: checklistId, operatorId: session.user.id, organizationId: session.user.organizationId } });
+  if (!checklist) {
     throw new Error("Checklist não encontrado.");
   }
 
@@ -128,8 +128,8 @@ export async function registerNonConformityAction(formData: FormData) {
 export async function finalizeChecklistAction(checklistId: string) {
   const session = await requireOperatorSession();
 
-  const checklist = await db.checklist.findUnique({
-    where: { id: checklistId },
+  const checklist = await db.checklist.findFirst({
+    where: { id: checklistId, operatorId: session.user.id, organizationId: session.user.organizationId },
     include: { answers: { include: { nonConformity: true } } },
   });
   if (!checklist || checklist.operatorId !== session.user.id) {
@@ -177,6 +177,7 @@ export async function finalizeChecklistAction(checklistId: string) {
     if (nc.nonConformity && (nc.nonConformity.severity === "ALTA" || nc.nonConformity.severity === "CRITICA")) {
       await db.maintenanceOccurrence.create({
         data: {
+          organizationId: session.user.organizationId,
           forkliftId: checklist.forkliftId,
           nonConformityId: nc.nonConformity.id,
           description: `Ocorrência gerada automaticamente: ${nc.nonConformity.description}`,

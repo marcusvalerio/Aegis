@@ -10,10 +10,10 @@ import type { ForkliftStatus } from "@/lib/types";
 export default async function ChecklistResultPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const session = await auth();
-  if (!session?.user) redirect("/login");
+  if (!session?.user?.organizationId) redirect("/login");
 
-  const checklist = await db.checklist.findUnique({
-    where: { id },
+  const checklist = await db.checklist.findFirst({
+    where: { id, organizationId: session.user.organizationId },
     include: { forklift: { include: { forkliftType: true } }, operator: true },
   });
 

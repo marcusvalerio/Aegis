@@ -6,11 +6,13 @@ import { getSnapshot } from "@/lib/checklist-engine";
 import { ForkliftStatusBadge, SeverityBadge } from "@/components/ui/StatusBadge";
 import { Check, X, Minus } from "lucide-react";
 import type { AnswerValue, ForkliftStatus, Severity } from "@/lib/types";
+import { requireAdmin } from "@/lib/actions/admin-guard";
 
 export default async function ChecklistDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const checklist = await db.checklist.findUnique({
-    where: { id },
+  const session = await requireAdmin();
+  const checklist = await db.checklist.findFirst({
+    where: { id, organizationId: session.user.organizationId },
     include: {
       forklift: { include: { forkliftType: true, energyType: true } },
       operator: true,

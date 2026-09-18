@@ -26,7 +26,7 @@ export async function createForkliftAction(formData: FormData) {
     throw new Error("Preencha os campos obrigatórios.");
   }
 
-  const forklift = await db.forklift.create({ data });
+  const forklift = await db.forklift.create({ data: { ...data, organizationId: session.user.organizationId } });
 
   await logAudit({
     userId: session.user.id,
@@ -57,6 +57,8 @@ export async function updateForkliftAction(id: string, formData: FormData) {
     active: formData.get("active") === "on",
   };
 
+  const owned = await db.forklift.findFirst({ where: { id, organizationId: session.user.organizationId } });
+  if (!owned) throw new Error("Empilhadeira não encontrada.");
   await db.forklift.update({ where: { id }, data });
 
   await logAudit({

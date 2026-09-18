@@ -46,6 +46,7 @@ async function main() {
   await db.auditLog.create({
     data: {
       userId: target.id,
+      organizationId: target.organizationId,
       entityType: "User",
       entityId: target.id,
       action: "PASSWORD_RESET_CLI",

@@ -1,4 +1,5 @@
 import { db } from "@/lib/db";
+import { requireAdmin } from "@/lib/actions/admin-guard";
 import { Metric, MetricRow } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { SeverityBadge, NonConformityStatusBadge } from "@/components/ui/StatusBadge";
@@ -6,12 +7,15 @@ import { NonConformityActions } from "@/components/admin/NonConformityActions";
 import type { NonConformityStatus, Severity } from "@/lib/types";
 
 export default async function NaoConformidadesPage() {
+  const session = await requireAdmin();
+  const org = { organizationId: session.user.organizationId };
   const [abertas, emTratamento, resolvidas, criticas, list] = await Promise.all([
-    db.nonConformity.count({ where: { status: "ABERTA" } }),
-    db.nonConformity.count({ where: { status: "EM_TRATAMENTO" } }),
-    db.nonConformity.count({ where: { status: "RESOLVIDA" } }),
-    db.nonConformity.count({ where: { severity: "CRITICA", status: { not: "RESOLVIDA" } } }),
+    db.nonConformity.count({ where: { ...org, status: "ABERTA" } }),
+    db.nonConformity.count({ where: { ...org, status: "EM_TRATAMENTO" } }),
+    db.nonConformity.count({ where: { ...org, status: "RESOLVIDA" } }),
+    db.nonConformity.count({ where: { ...org, severity: "CRITICA", status: { not: "RESOLVIDA" } } }),
     db.nonConformity.findMany({
+      where: org,
       include: { forklift: true, attachments: true },
       orderBy: { createdAt: "desc" },
       take: 100,

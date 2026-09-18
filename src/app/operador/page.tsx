@@ -1,4 +1,5 @@
 import { db } from "@/lib/db";
+import { requireTenantSession } from "@/lib/tenant";
 import { ForkliftMedia } from "@/components/ForkliftMedia";
 import { ForkliftStatusBadge } from "@/components/ui/StatusBadge";
 import { startChecklistAction } from "@/lib/actions/checklist";
@@ -6,8 +7,9 @@ import { QrCode } from "lucide-react";
 import type { ForkliftStatus } from "@/lib/types";
 
 export default async function SelecionarEquipamentoPage() {
+  const session = await requireTenantSession();
   const forklifts = await db.forklift.findMany({
-    where: { active: true },
+    where: { active: true, organizationId: session.user.organizationId },
     include: { forkliftType: true, energyType: true },
     orderBy: { code: "asc" },
   });

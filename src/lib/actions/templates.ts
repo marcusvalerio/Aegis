@@ -10,9 +10,9 @@ export async function createCategoryAction(formData: FormData) {
   const name = String(formData.get("name") ?? "").trim();
   if (!name) throw new Error("Informe o nome da categoria.");
 
-  const count = await db.checklistCategory.count();
+  const count = await db.checklistCategory.count({ where: { organizationId: session.user.organizationId } });
   const category = await db.checklistCategory.create({
-    data: { name, order: count },
+    data: { organizationId: session.user.organizationId, name, order: count },
   });
 
   await logAudit({
@@ -28,6 +28,8 @@ export async function createCategoryAction(formData: FormData) {
 
 export async function toggleCategoryActiveAction(id: string, active: boolean) {
   const session = await requireAdmin();
+  const category = await db.checklistCategory.findFirst({ where: { id, organizationId: session.user.organizationId } });
+  if (!category) throw new Error("Categoria personalizada não encontrada.");
   await db.checklistCategory.update({ where: { id }, data: { active } });
   await logAudit({
     userId: session.user.id,
@@ -56,10 +58,13 @@ export async function createItemAction(formData: FormData) {
     throw new Error("Preencha categoria, rótulo e pergunta.");
   }
 
-  const count = await db.checklistItem.count({ where: { categoryId } });
+  const category = await db.checklistCategory.findFirst({ where: { id: categoryId, OR: [{ organizationId: null }, { organizationId: session.user.organizationId }] } });
+  if (!category) throw new Error("Categoria não encontrada.");
+  const count = await db.checklistItem.count({ where: { categoryId, OR: [{ organizationId: null }, { organizationId: session.user.organizationId }] } });
 
   const item = await db.checklistItem.create({
     data: {
+      organizationId: session.user.organizationId,
       categoryId,
       label,
       question,
@@ -93,6 +98,8 @@ export async function createItemAction(formData: FormData) {
 
 export async function toggleItemActiveAction(id: string, active: boolean) {
   const session = await requireAdmin();
+  const item = await db.checklistItem.findFirst({ where: { id, organizationId: session.user.organizationId } });
+  if (!item) throw new Error("Item personalizado não encontrado.");
   await db.checklistItem.update({
     where: { id },
     data: { active, updatedById: session.user.id },

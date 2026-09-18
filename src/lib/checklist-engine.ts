@@ -9,18 +9,19 @@ import type { ChecklistSnapshot, RequiresPhoto, Severity, SnapshotCategory } fro
  * that were linked the same way. This is the single source of truth for
  * "checklist base + tipo + energia + personalizacoes".
  */
-export async function assembleChecklistForForklift(forkliftId: string): Promise<ChecklistSnapshot> {
-  const forklift = await db.forklift.findUniqueOrThrow({
+export async function assembleChecklistForForklift(forkliftId: string, organizationId: string): Promise<ChecklistSnapshot> {
+  const forklift = await db.forklift.findFirstOrThrow({
+    where: { id: forkliftId, organizationId },
     where: { id: forkliftId },
     include: { forkliftType: true, energyType: true },
   });
 
   const categories = await db.checklistCategory.findMany({
-    where: { active: true },
+    where: { active: true, OR: [{ organizationId: null }, { organizationId }] },
     orderBy: { order: "asc" },
     include: {
       items: {
-        where: { active: true },
+        where: { active: true, OR: [{ organizationId: null }, { organizationId }] },
         orderBy: { order: "asc" },
         include: { typeLinks: true, energyLinks: true },
       },
@@ -73,12 +74,13 @@ export function countSnapshotItems(snapshot: ChecklistSnapshot): number {
   return snapshot.categories.reduce((sum, c) => sum + c.items.length, 0);
 }
 
-export async function startChecklist(forkliftId: string, operatorId: string) {
-  const snapshot = await assembleChecklistForForklift(forkliftId);
-  const forklift = await db.forklift.findUniqueOrThrow({ where: { id: forkliftId } });
+export async function startChecklist(forkliftId: string, operatorId: string, organizationId: string) {
+  const snapshot = await assembleChecklistForForklift(forkliftId, organizationId);
+  const forklift = await db.forklift.findFirstOrThrow({ where: { id: forkliftId, organizationId } });
 
   const checklist = await db.checklist.create({
     data: {
+      organizationId,
       forkliftId,
       operatorId,
       hourmeter: forklift.hourmeter,

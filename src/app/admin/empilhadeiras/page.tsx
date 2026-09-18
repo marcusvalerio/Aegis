@@ -6,6 +6,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { Plus } from "lucide-react";
 import type { ForkliftStatus } from "@/lib/types";
 import type { Prisma } from "@prisma/client";
+import { requireAdmin } from "@/lib/actions/admin-guard";
 
 interface SearchParams {
   q?: string;
@@ -18,8 +19,9 @@ export default async function EmpilhadeirasPage({
   searchParams: Promise<SearchParams>;
 }) {
   const params = await searchParams;
+  const session = await requireAdmin();
 
-  const where: Prisma.ForkliftWhereInput = {};
+  const where: Prisma.ForkliftWhereInput = { organizationId: session.user.organizationId };
   if (params.status) where.status = params.status;
   if (params.q) {
     where.OR = [

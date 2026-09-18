@@ -18,6 +18,7 @@ const NAV = [
   { href: "/admin/checklists", label: "Checklists", icon: <ClipboardList size={16} aria-hidden="true" /> },
   { href: "/admin/nao-conformidades", label: "Não conformidades", icon: <AlertTriangle size={16} aria-hidden="true" /> },
   { href: "/admin/checklist-config", label: "Config. checklist", icon: <Settings size={16} aria-hidden="true" /> },
+  { href: "/admin/usuarios", label: "Usuários e acessos", icon: <UserCog size={16} aria-hidden="true" /> },
   { href: "/admin/conta", label: "Minha conta", icon: <UserCog size={16} aria-hidden="true" /> },
 ];
 

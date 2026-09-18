@@ -12,6 +12,8 @@ const SEED_DEMO_DATA = process.env.SEED_DEMO_DATA === "true";
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL ?? "admin@aegis.com";
 const ADMIN_NAME = process.env.ADMIN_NAME ?? "Administrador";
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
+const ORGANIZATION_NAME = process.env.ORGANIZATION_NAME ?? "Empresa principal";
+const ORGANIZATION_SLUG = process.env.ORGANIZATION_SLUG ?? "empresa-principal";
 
 const MIN_PASSWORD_LENGTH = 12;
 
@@ -29,18 +31,25 @@ async function main() {
     throw new Error(`ADMIN_PASSWORD precisa ter pelo menos ${MIN_PASSWORD_LENGTH} caracteres.`);
   }
 
+  const organization = await db.organization.upsert({
+    where: { slug: ORGANIZATION_SLUG },
+    update: { name: ORGANIZATION_NAME },
+    create: { name: ORGANIZATION_NAME, slug: ORGANIZATION_SLUG },
+  });
+
   const adminPasswordHash = await bcrypt.hash(ADMIN_PASSWORD, 10);
 
   // update: {} means an existing admin's passwordHash is never touched by
   // re-running the seed — only a brand-new row gets this hash.
   const admin = await db.user.upsert({
     where: { email: ADMIN_EMAIL },
-    update: {},
+    update: { organizationId: organization.id },
     create: {
       name: ADMIN_NAME,
       email: ADMIN_EMAIL,
       passwordHash: adminPasswordHash,
       role: "ADMIN",
+      organizationId: organization.id,
     },
   });
 
@@ -55,13 +64,13 @@ async function main() {
     const demoPasswordHash = await bcrypt.hash(demoPassword, 10);
     await db.user.upsert({
       where: { email: "operador@aegis.com" },
-      update: {},
-      create: { name: "João Silva", email: "operador@aegis.com", passwordHash: demoPasswordHash, role: "OPERADOR" },
+      update: { organizationId: organization.id },
+      create: { name: "João Silva", email: "operador@aegis.com", passwordHash: demoPasswordHash, role: "OPERADOR", organizationId: organization.id },
     });
     await db.user.upsert({
       where: { email: "carlos@aegis.com" },
-      update: {},
-      create: { name: "Carlos Souza", email: "carlos@aegis.com", passwordHash: demoPasswordHash, role: "OPERADOR" },
+      update: { organizationId: organization.id },
+      create: { name: "Carlos Souza", email: "carlos@aegis.com", passwordHash: demoPasswordHash, role: "OPERADOR", organizationId: organization.id },
     });
   }
 
@@ -319,7 +328,11 @@ async function main() {
     ];
 
     for (const f of forklifts) {
-      await db.forklift.upsert({ where: { code: f.code }, update: {}, create: f });
+      await db.forklift.upsert({
+        where: { code: f.code },
+        update: { organizationId: organization.id },
+        create: { ...f, organizationId: organization.id },
+      });
     }
   }
 

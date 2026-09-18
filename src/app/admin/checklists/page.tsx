@@ -4,6 +4,7 @@ import { ForkliftStatusBadge } from "@/components/ui/StatusBadge";
 import { EmptyState } from "@/components/ui/EmptyState";
 import type { ForkliftStatus } from "@/lib/types";
 import type { Prisma } from "@prisma/client";
+import { requireAdmin } from "@/lib/actions/admin-guard";
 
 interface SearchParams {
   forklift?: string;
@@ -17,9 +18,10 @@ export default async function ChecklistsPage({
   searchParams: Promise<SearchParams>;
 }) {
   const params = await searchParams;
-  const forklifts = await db.forklift.findMany({ orderBy: { code: "asc" } });
+  const session = await requireAdmin();
+  const forklifts = await db.forklift.findMany({ where: { organizationId: session.user.organizationId }, orderBy: { code: "asc" } });
 
-  const where: Prisma.ChecklistWhereInput = { status: "CONCLUIDO" };
+  const where: Prisma.ChecklistWhereInput = { status: "CONCLUIDO", organizationId: session.user.organizationId };
   if (params.forklift) where.forkliftId = params.forklift;
   if (params.status) where.resultStatus = params.status;
 

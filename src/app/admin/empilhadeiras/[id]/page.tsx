@@ -9,11 +9,13 @@ import { ForkliftForm } from "@/components/admin/ForkliftForm";
 import { updateForkliftAction } from "@/lib/actions/forklifts";
 import { Settings2 } from "lucide-react";
 import type { ForkliftStatus, NonConformityStatus, Severity } from "@/lib/types";
+import { requireAdmin } from "@/lib/actions/admin-guard";
 
 export default async function ForkliftDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const forklift = await db.forklift.findUnique({
-    where: { id },
+  const session = await requireAdmin();
+  const forklift = await db.forklift.findFirst({
+    where: { id, organizationId: session.user.organizationId },
     include: {
       forkliftType: true,
       energyType: true,

@@ -3,10 +3,13 @@ import { createCategoryAction, createItemAction } from "@/lib/actions/templates"
 import { ItemActiveToggle, CategoryActiveToggle } from "@/components/admin/TemplateToggles";
 import { SeverityBadge } from "@/components/ui/StatusBadge";
 import type { Severity } from "@/lib/types";
+import { requireAdmin } from "@/lib/actions/admin-guard";
 
 export default async function ChecklistConfigPage() {
+  const session = await requireAdmin();
   const [categories, forkliftTypes, energyTypes] = await Promise.all([
     db.checklistCategory.findMany({
+      where: { OR: [{ organizationId: null }, { organizationId: session.user.organizationId }] },
       orderBy: { order: "asc" },
       include: {
         items: {

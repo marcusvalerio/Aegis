@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { db } from "@/lib/db";
+import { requireAdmin } from "@/lib/actions/admin-guard";
 import { MetricRow, Metric } from "@/components/ui/Card";
 import { ForkliftStatusBadge, NonConformityStatusBadge } from "@/components/ui/StatusBadge";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -12,10 +13,11 @@ function startOfToday() {
 }
 
 export default async function AdminDashboardPage() {
+  const session = await requireAdmin();
   const since = startOfToday();
 
   const todayChecklists = await db.checklist.findMany({
-    where: { status: "CONCLUIDO", finishedAt: { gte: since } },
+    where: { organizationId: session.user.organizationId, status: "CONCLUIDO", finishedAt: { gte: since } },
     include: { forklift: true, operator: true },
     orderBy: { finishedAt: "desc" },
   });
@@ -26,7 +28,7 @@ export default async function AdminDashboardPage() {
   const bloqueados = todayChecklists.filter((c) => c.resultStatus === "BLOQUEADA").length;
 
   const openNCs = await db.nonConformity.findMany({
-    where: { status: { in: ["ABERTA", "EM_TRATAMENTO"] } },
+    where: { organizationId: session.user.organizationId, status: { in: ["ABERTA", "EM_TRATAMENTO"] } },
     include: { forklift: true },
     orderBy: { createdAt: "desc" },
     take: 6,
