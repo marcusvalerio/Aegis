@@ -12,7 +12,6 @@ import type { ChecklistSnapshot, RequiresPhoto, Severity, SnapshotCategory } fro
 export async function assembleChecklistForForklift(forkliftId: string, organizationId: string): Promise<ChecklistSnapshot> {
   const forklift = await db.forklift.findFirstOrThrow({
     where: { id: forkliftId, organizationId },
-    where: { id: forkliftId },
     include: { forkliftType: true, energyType: true },
   });
 
