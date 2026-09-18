@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { requireAdmin } from "@/lib/actions/admin-guard";
 import { logAudit } from "@/lib/audit";
+import { saveForkliftImage } from "@/lib/uploads";
 
 export async function createForkliftAction(formData: FormData) {
   const session = await requireAdmin();
@@ -18,7 +19,6 @@ export async function createForkliftAction(formData: FormData) {
     energyTypeId: String(formData.get("energyTypeId")),
     capacityKg: Number(formData.get("capacityKg") ?? 0),
     hourmeter: Number(formData.get("hourmeter") ?? 0),
-    imageUrl: String(formData.get("imageUrl") ?? "").trim() || null,
     notes: String(formData.get("notes") ?? "").trim() || null,
   };
 
@@ -26,14 +26,19 @@ export async function createForkliftAction(formData: FormData) {
     throw new Error("Preencha os campos obrigatórios.");
   }
 
-  const forklift = await db.forklift.create({ data: { ...data, organizationId: session.user.organizationId } });
+  const photo = formData.get("photo") as File | null;
+  const imageUrl = photo && photo.size > 0 ? await saveForkliftImage(photo, session.user.organizationId) : null;
+
+  const forklift = await db.forklift.create({
+    data: { ...data, imageUrl, organizationId: session.user.organizationId },
+  });
 
   await logAudit({
     userId: session.user.id,
     entityType: "Forklift",
     entityId: forklift.id,
     action: "CREATE",
-    changes: data,
+    changes: { ...data, imageUrl },
   });
 
   revalidatePath("/admin/empilhadeiras");
@@ -42,6 +47,9 @@ export async function createForkliftAction(formData: FormData) {
 
 export async function updateForkliftAction(id: string, formData: FormData) {
   const session = await requireAdmin();
+
+  const owned = await db.forklift.findFirst({ where: { id, organizationId: session.user.organizationId } });
+  if (!owned) throw new Error("Empilhadeira não encontrada.");
 
   const data = {
     code: String(formData.get("code") ?? "").trim(),
@@ -52,21 +60,26 @@ export async function updateForkliftAction(id: string, formData: FormData) {
     energyTypeId: String(formData.get("energyTypeId")),
     capacityKg: Number(formData.get("capacityKg") ?? 0),
     hourmeter: Number(formData.get("hourmeter") ?? 0),
-    imageUrl: String(formData.get("imageUrl") ?? "").trim() || null,
     notes: String(formData.get("notes") ?? "").trim() || null,
     active: formData.get("active") === "on",
   };
 
-  const owned = await db.forklift.findFirst({ where: { id, organizationId: session.user.organizationId } });
-  if (!owned) throw new Error("Empilhadeira não encontrada.");
-  await db.forklift.update({ where: { id }, data });
+  const photo = formData.get("photo") as File | null;
+  const removeImage = formData.get("removeImage") === "true";
+  const imageUrl = photo && photo.size > 0
+    ? await saveForkliftImage(photo, session.user.organizationId)
+    : removeImage
+      ? null
+      : owned.imageUrl;
+
+  await db.forklift.update({ where: { id }, data: { ...data, imageUrl } });
 
   await logAudit({
     userId: session.user.id,
     entityType: "Forklift",
     entityId: id,
     action: "UPDATE",
-    changes: data,
+    changes: { ...data, imageUrl },
   });
 
   revalidatePath("/admin/empilhadeiras");

@@ -1,4 +1,6 @@
 import type { EnergyType, Forklift, ForkliftType } from "@prisma/client";
+import { ForkliftImageField } from "@/components/admin/ForkliftImageField";
+import { ForkliftFormSubmit } from "@/components/admin/ForkliftFormSubmit";
 
 export function ForkliftForm({
   forklift,
@@ -15,7 +17,9 @@ export function ForkliftForm({
 }) {
   return (
     <form action={action} className="max-w-2xl border border-black/10 bg-white p-6">
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      <ForkliftImageField initialImageUrl={forklift?.imageUrl} />
+
+      <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
         <Field label="Código / patrimônio" required>
           <input name="code" defaultValue={forklift?.code} required className="input" />
         </Field>
@@ -50,9 +54,6 @@ export function ForkliftForm({
         <Field label="Horímetro">
           <input type="number" step="0.1" name="hourmeter" defaultValue={forklift?.hourmeter ?? 0} className="input" />
         </Field>
-        <Field label="URL da imagem">
-          <input name="imageUrl" defaultValue={forklift?.imageUrl ?? ""} placeholder="/uploads/..." className="input" />
-        </Field>
         {forklift && (
           <Field label="Ativa">
             <label className="mt-2 flex items-center gap-2 font-aux text-sm text-black/70">
@@ -67,12 +68,7 @@ export function ForkliftForm({
         <textarea name="notes" defaultValue={forklift?.notes ?? ""} rows={3} className="input" />
       </Field>
 
-      <button
-        type="submit"
-        className="mt-6 bg-black px-6 py-3 font-sans text-xs font-bold uppercase tracking-wide text-white hover:bg-black/85"
-      >
-        {submitLabel}
-      </button>
+      <ForkliftFormSubmit label={submitLabel} />
     </form>
   );
 }
