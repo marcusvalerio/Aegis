@@ -22,12 +22,17 @@ export function ForkliftMedia({
   fit?: "cover" | "contain";
 }) {
   if (imageUrl) {
+    // External URLs (S3/R2 photos, admin-supplied links) skip Next's image
+    // optimizer — its domain allowlist can't be pre-configured for an
+    // S3_PUBLIC_URL_BASE the deployer sets after the fact.
+    const isExternal = /^https?:\/\//.test(imageUrl);
     return (
       <div className={clsx("relative overflow-hidden", className)}>
         <Image
           src={imageUrl}
           alt={alt}
           fill
+          unoptimized={isExternal}
           sizes="(min-width: 1024px) 400px, 90vw"
           className={fit === "cover" ? "object-cover" : "object-contain"}
         />

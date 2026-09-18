@@ -4,6 +4,12 @@ import bcrypt from "bcryptjs";
 import { db } from "@/lib/db";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
+  // Vercel auto-detects its own proxy; any other host behind a reverse proxy
+  // (Railway, Fly, Render, a plain Docker/nginx setup, ...) needs this to
+  // trust X-Forwarded-* headers, or cookie/callback URLs resolve to http://
+  // and break login. Off by default so a misconfigured deploy fails loudly
+  // instead of trusting headers it shouldn't.
+  trustHost: process.env.AUTH_TRUST_HOST === "true" || Boolean(process.env.VERCEL),
   session: { strategy: "jwt" },
   pages: { signIn: "/login" },
   providers: [

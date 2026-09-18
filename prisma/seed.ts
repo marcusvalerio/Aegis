@@ -3,41 +3,51 @@ import bcrypt from "bcryptjs";
 
 const db = new PrismaClient();
 
+// Reference data required for the app to function at all (forklift types,
+// energy types, the base checklist template, severity rules). This always
+// runs. Demo users/equipment are opt-in via SEED_DEMO_DATA so a production
+// seed doesn't create a known admin/operador login with a shared password.
+const SEED_DEMO_DATA = process.env.SEED_DEMO_DATA === "true";
+
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL ?? "admin@aegis.com";
+const ADMIN_NAME = process.env.ADMIN_NAME ?? "Administrador";
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
+
 async function main() {
-  const passwordHash = await bcrypt.hash("aegis123", 10);
+  if (!ADMIN_PASSWORD && !SEED_DEMO_DATA) {
+    throw new Error(
+      "ADMIN_PASSWORD não definida. Defina uma senha forte para o admin de bootstrap " +
+        "(ex.: ADMIN_PASSWORD='...' npm run seed), ou rode com SEED_DEMO_DATA=true apenas " +
+        "em ambiente de desenvolvimento/demonstração.",
+    );
+  }
+
+  const adminPasswordHash = await bcrypt.hash(ADMIN_PASSWORD ?? "aegis123", 10);
 
   const admin = await db.user.upsert({
-    where: { email: "admin@aegis.com" },
+    where: { email: ADMIN_EMAIL },
     update: {},
     create: {
-      name: "Ana Martins",
-      email: "admin@aegis.com",
-      passwordHash,
+      name: ADMIN_NAME,
+      email: ADMIN_EMAIL,
+      passwordHash: adminPasswordHash,
       role: "ADMIN",
     },
   });
 
-  const operator = await db.user.upsert({
-    where: { email: "operador@aegis.com" },
-    update: {},
-    create: {
-      name: "João Silva",
-      email: "operador@aegis.com",
-      passwordHash,
-      role: "OPERADOR",
-    },
-  });
-
-  await db.user.upsert({
-    where: { email: "carlos@aegis.com" },
-    update: {},
-    create: {
-      name: "Carlos Souza",
-      email: "carlos@aegis.com",
-      passwordHash,
-      role: "OPERADOR",
-    },
-  });
+  if (SEED_DEMO_DATA) {
+    const demoPasswordHash = await bcrypt.hash("aegis123", 10);
+    await db.user.upsert({
+      where: { email: "operador@aegis.com" },
+      update: {},
+      create: { name: "João Silva", email: "operador@aegis.com", passwordHash: demoPasswordHash, role: "OPERADOR" },
+    });
+    await db.user.upsert({
+      where: { email: "carlos@aegis.com" },
+      update: {},
+      create: { name: "Carlos Souza", email: "carlos@aegis.com", passwordHash: demoPasswordHash, role: "OPERADOR" },
+    });
+  }
 
   const forkliftTypes = await Promise.all(
     [
@@ -210,91 +220,98 @@ async function main() {
     },
   ];
 
-  for (let ci = 0; ci < categoryDefs.length; ci++) {
-    const def = categoryDefs[ci];
-    const category = await db.checklistCategory.create({
-      data: { name: def.name, order: ci },
-    });
-
-    for (let ii = 0; ii < def.items.length; ii++) {
-      const itemDef = def.items[ii];
-      const appliesToAllTypes = itemDef.appliesToAllTypes ?? !itemDef.typeKeys;
-      const appliesToAllEnergies = !itemDef.energyKeys;
-
-      await db.checklistItem.create({
-        data: {
-          categoryId: category.id,
-          label: itemDef.label,
-          question: itemDef.question,
-          order: ii,
-          defaultSeverity: itemDef.severity ?? "MEDIA",
-          requiresPhoto: (itemDef.severity === "CRITICA" || itemDef.severity === "ALTA") ? "OBRIGATORIA_NC" : "OPCIONAL",
-          requiresNote: true,
-          appliesToAllTypes,
-          appliesToAllEnergies,
-          createdById: admin.id,
-          updatedById: admin.id,
-          typeLinks: itemDef.typeKeys
-            ? { create: itemDef.typeKeys.map((k) => ({ forkliftTypeId: type(k).id })) }
-            : undefined,
-          energyLinks: itemDef.energyKeys
-            ? { create: itemDef.energyKeys.map((k) => ({ energyTypeId: energy(k).id })) }
-            : undefined,
-        },
+  const existingCategories = await db.checklistCategory.count();
+  if (existingCategories === 0) {
+    for (let ci = 0; ci < categoryDefs.length; ci++) {
+      const def = categoryDefs[ci];
+      const category = await db.checklistCategory.create({
+        data: { name: def.name, order: ci },
       });
+
+      for (let ii = 0; ii < def.items.length; ii++) {
+        const itemDef = def.items[ii];
+        const appliesToAllTypes = itemDef.appliesToAllTypes ?? !itemDef.typeKeys;
+        const appliesToAllEnergies = !itemDef.energyKeys;
+
+        await db.checklistItem.create({
+          data: {
+            categoryId: category.id,
+            label: itemDef.label,
+            question: itemDef.question,
+            order: ii,
+            defaultSeverity: itemDef.severity ?? "MEDIA",
+            requiresPhoto: (itemDef.severity === "CRITICA" || itemDef.severity === "ALTA") ? "OBRIGATORIA_NC" : "OPCIONAL",
+            requiresNote: true,
+            appliesToAllTypes,
+            appliesToAllEnergies,
+            createdById: admin.id,
+            updatedById: admin.id,
+            typeLinks: itemDef.typeKeys
+              ? { create: itemDef.typeKeys.map((k) => ({ forkliftTypeId: type(k).id })) }
+              : undefined,
+            energyLinks: itemDef.energyKeys
+              ? { create: itemDef.energyKeys.map((k) => ({ energyTypeId: energy(k).id })) }
+              : undefined,
+          },
+        });
+      }
     }
   }
 
-  const forklifts = [
-    {
-      code: "EMP-001",
-      brand: "Toyota",
-      model: "8FG25",
-      serialNumber: "TY8FG25-0001",
-      forkliftTypeId: type("CONTRABALANCADA").id,
-      energyTypeId: energy("GLP").id,
-      capacityKg: 2500,
-      hourmeter: 4812,
-    },
-    {
-      code: "EMP-002",
-      brand: "Hyster",
-      model: "P2.0",
-      serialNumber: "HY-P20-0002",
-      forkliftTypeId: type("PALETEIRA_ELETRICA").id,
-      energyTypeId: energy("ELETRICA").id,
-      capacityKg: 2000,
-      hourmeter: 1230,
-    },
-    {
-      code: "EMP-003",
-      brand: "Toyota",
-      model: "8FBR15",
-      serialNumber: "TY8FBR15-0003",
-      forkliftTypeId: type("RETRATIL").id,
-      energyTypeId: energy("ELETRICA").id,
-      capacityKg: 1500,
-      hourmeter: 2481,
-    },
-    {
-      code: "EMP-004",
-      brand: "Paletrans",
-      model: "PM-2000",
-      serialNumber: "PT-PM2000-0004",
-      forkliftTypeId: type("PALETEIRA_MANUAL").id,
-      energyTypeId: energy("NAO_APLICAVEL").id,
-      capacityKg: 2000,
-      hourmeter: 0,
-    },
-  ];
+  if (SEED_DEMO_DATA) {
+    const forklifts = [
+      {
+        code: "EMP-001",
+        brand: "Toyota",
+        model: "8FG25",
+        serialNumber: "TY8FG25-0001",
+        forkliftTypeId: type("CONTRABALANCADA").id,
+        energyTypeId: energy("GLP").id,
+        capacityKg: 2500,
+        hourmeter: 4812,
+      },
+      {
+        code: "EMP-002",
+        brand: "Hyster",
+        model: "P2.0",
+        serialNumber: "HY-P20-0002",
+        forkliftTypeId: type("PALETEIRA_ELETRICA").id,
+        energyTypeId: energy("ELETRICA").id,
+        capacityKg: 2000,
+        hourmeter: 1230,
+      },
+      {
+        code: "EMP-003",
+        brand: "Toyota",
+        model: "8FBR15",
+        serialNumber: "TY8FBR15-0003",
+        forkliftTypeId: type("RETRATIL").id,
+        energyTypeId: energy("ELETRICA").id,
+        capacityKg: 1500,
+        hourmeter: 2481,
+      },
+      {
+        code: "EMP-004",
+        brand: "Paletrans",
+        model: "PM-2000",
+        serialNumber: "PT-PM2000-0004",
+        forkliftTypeId: type("PALETEIRA_MANUAL").id,
+        energyTypeId: energy("NAO_APLICAVEL").id,
+        capacityKg: 2000,
+        hourmeter: 0,
+      },
+    ];
 
-  for (const f of forklifts) {
-    await db.forklift.upsert({ where: { code: f.code }, update: {}, create: f });
+    for (const f of forklifts) {
+      await db.forklift.upsert({ where: { code: f.code }, update: {}, create: f });
+    }
   }
 
   console.log("Seed concluído.");
-  console.log(`Admin: admin@aegis.com / aegis123`);
-  console.log(`Operador: operador@aegis.com / aegis123`);
+  console.log(`Admin: ${ADMIN_EMAIL}${ADMIN_PASSWORD ? "" : " / aegis123 (senha padrão de dev — defina ADMIN_PASSWORD em produção)"}`);
+  if (SEED_DEMO_DATA) {
+    console.log("Dados de demonstração criados (operadores + 4 empilhadeiras de exemplo).");
+  }
 }
 
 main()

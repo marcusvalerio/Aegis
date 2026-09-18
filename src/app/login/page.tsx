@@ -17,9 +17,11 @@ export default function LoginPage() {
           <LoginForm />
         </div>
 
-        <div className="mt-8 border-t border-white/10 pt-4 font-aux text-[11px] text-white/30">
-          Ambiente de demonstração — admin@aegis.com / operador@aegis.com (senha: aegis123)
-        </div>
+        {process.env.SHOW_DEMO_CREDENTIALS === "true" && (
+          <div className="mt-8 border-t border-white/10 pt-4 font-aux text-[11px] text-white/30">
+            Ambiente de demonstração — admin@aegis.com / operador@aegis.com (senha: aegis123)
+          </div>
+        )}
       </div>
     </main>
   );

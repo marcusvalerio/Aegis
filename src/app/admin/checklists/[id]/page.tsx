@@ -93,6 +93,7 @@ export default async function ChecklistDetailPage({ params }: { params: Promise<
                                 alt="Foto da não conformidade"
                                 width={80}
                                 height={80}
+                                unoptimized={/^https?:\/\//.test(att.url)}
                                 className="border border-black/10 object-cover"
                               />
                             </a>
