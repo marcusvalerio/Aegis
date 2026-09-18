@@ -107,6 +107,7 @@ export async function registerNonConformityAction(formData: FormData) {
     where: { answerId },
     update: { description, severity },
     create: {
+      organizationId: session.user.organizationId,
       checklistId,
       answerId,
       forkliftId: checklist.forkliftId,

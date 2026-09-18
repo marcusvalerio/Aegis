@@ -48,11 +48,11 @@ export default async function AdminDashboardPage() {
       select: {
         id: true,
         itemLabel: true,
-        categoryName: true,
         severity: true,
         status: true,
         createdAt: true,
         forklift: { select: { code: true } },
+        answer: { select: { categoryName: true } },
       },
       orderBy: { createdAt: "desc" },
     }),
@@ -94,7 +94,7 @@ export default async function AdminDashboardPage() {
 
   const problemFrequency = new Map<string, { count: number; category: string }>();
   for (const nc of nc30) {
-    const current = problemFrequency.get(nc.itemLabel) ?? { count: 0, category: nc.categoryName };
+    const current = problemFrequency.get(nc.itemLabel) ?? { count: 0, category: nc.answer.categoryName };
     current.count += 1;
     problemFrequency.set(nc.itemLabel, current);
   }

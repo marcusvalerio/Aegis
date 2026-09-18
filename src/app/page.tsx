@@ -1,16 +1,7 @@
 import Link from "next/link";
 import { ForkliftMedia } from "@/components/ForkliftMedia";
-import { db } from "@/lib/db";
 
-export const dynamic = "force-dynamic";
-
-export default async function HomePage() {
-  const featured = await db.forklift.findFirst({
-    where: { active: true },
-    include: { forkliftType: true, energyType: true },
-    orderBy: { code: "asc" },
-  });
-
+export default function HomePage() {
   return (
     <main className="flex min-h-screen flex-col bg-black text-white">
       <header className="flex items-center justify-between border-b border-white/10 px-6 py-5 md:px-12">
@@ -80,34 +71,17 @@ export default async function HomePage() {
         </div>
 
         <div className="dot-grid-inverse relative hidden border-l border-white/10 bg-black md:block">
-          {featured ? (
-            <>
-              <ForkliftMedia
-                imageUrl={featured.imageUrl}
-                typeKey={featured.forkliftType.key}
-                alt={`${featured.brand} ${featured.model}`}
-                fit="contain"
-                className="absolute inset-12 text-yellow"
-              />
-              <div className="absolute bottom-10 left-10 right-10 flex items-end justify-between border-t border-white/10 pt-4">
-                <div>
-                  <p className="font-display text-sm font-bold uppercase tracking-wide">
-                    {featured.code}
-                  </p>
-                  <p className="font-aux text-xs uppercase tracking-widest text-white/40">
-                    {featured.forkliftType.name} · {featured.energyType.name}
-                  </p>
-                </div>
-                <p className="font-aux text-xs uppercase tracking-widest text-white/30">
-                  {featured.capacityKg.toLocaleString("pt-BR")} kg
-                </p>
-              </div>
-            </>
-          ) : (
-            <div className="flex h-full items-center justify-center font-aux text-xs uppercase tracking-widest text-white/30">
-              Nenhum equipamento cadastrado
-            </div>
-          )}
+          <ForkliftMedia
+            typeKey="CONTRABALANCADA"
+            alt="Empilhadeira"
+            fit="contain"
+            className="absolute inset-12 text-yellow"
+          />
+          <div className="absolute bottom-10 left-10 right-10 border-t border-white/10 pt-4">
+            <p className="font-aux text-xs uppercase tracking-widest text-white/40">
+              Cada empresa opera sua própria frota, isolada e rastreável.
+            </p>
+          </div>
         </div>
       </div>
     </main>

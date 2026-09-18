@@ -55,6 +55,7 @@ export async function changeOwnPasswordAction(
 
   await db.auditLog.create({
     data: {
+      organizationId: session.user.organizationId,
       userId: user.id,
       entityType: "User",
       entityId: user.id,
