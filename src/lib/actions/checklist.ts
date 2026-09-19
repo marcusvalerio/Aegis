@@ -118,7 +118,7 @@ export async function registerNonConformityAction(formData: FormData) {
   });
 
   if (photo && photo.size > 0) {
-    const url = await saveUploadedPhoto(photo);
+    const url = await saveUploadedPhoto(photo, session.user.organizationId);
     await db.attachment.create({ data: { nonConformityId: nc.id, url } });
   }
 
