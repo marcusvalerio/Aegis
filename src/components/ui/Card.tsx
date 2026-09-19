@@ -1,7 +1,11 @@
 import clsx from "clsx";
 
 export function MetricRow({ children }: { children: React.ReactNode }) {
-  return <div className="flex flex-wrap divide-x divide-black/10 border-y border-black/10">{children}</div>;
+  return (
+    <div className="grid grid-cols-2 border-y border-black/10 md:grid-cols-4">
+      {children}
+    </div>
+  );
 }
 
 const METRIC_TONE = {
@@ -21,7 +25,7 @@ export function Metric({
   tone?: keyof typeof METRIC_TONE;
 }) {
   return (
-    <div className="flex-1 px-6 py-5 first:pl-0">
+    <div className="min-w-0 border-black/10 px-4 py-5 first:border-r first:pl-0 [&:nth-child(even)]:border-l [&:nth-child(n+3)]:border-t md:border-t-0 md:px-6 md:first:pl-0 md:[&:nth-child(even)]:border-l md:[&:nth-child(n+3)]:border-l md:[&:nth-child(n+3)]:border-t-0">
       <div className={clsx("font-display text-4xl font-bold tabular-nums lg:text-5xl", METRIC_TONE[tone])}>
         {value}
       </div>
