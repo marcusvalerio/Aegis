@@ -53,7 +53,7 @@ export default async function ForkliftDetailPage({ params }: { params: Promise<{
         <div className="flex flex-1 items-center gap-4">
           <div className="h-20 w-20 shrink-0 border border-black/10 bg-tan">
             <ForkliftMedia
-              imageUrl={forklift.imageUrl}
+              imageUrl={resolvedImageUrl}
               typeKey={forklift.forkliftType.key}
               alt={`${forklift.brand} ${forklift.model}`}
               fit="contain"
