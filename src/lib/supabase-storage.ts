@@ -107,7 +107,7 @@ export async function resolveForkliftImageUrl(
 ): Promise<string | null> {
   if (!imagePath) return null;
 
-  if (/^https?:\\/\\//.test(imagePath) || imagePath.startsWith("/")) {
+  if (imagePath.startsWith("http://") || imagePath.startsWith("https://") || imagePath.startsWith("/")) {
     return imagePath;
   }
 
