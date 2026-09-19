@@ -32,6 +32,11 @@ export default async function ForkliftDetailPage({ params }: { params: Promise<{
 
   if (!forklift) notFound();
 
+  const resolvedImageUrl = await resolveForkliftImageUrl(
+    forklift.imageUrl,
+    session.user.organizationId,
+  );
+
   const [forkliftTypes, energyTypes] = await Promise.all([
     db.forkliftType.findMany({ orderBy: { name: "asc" } }),
     db.energyType.findMany({ orderBy: { name: "asc" } }),
