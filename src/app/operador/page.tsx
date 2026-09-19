@@ -1,6 +1,7 @@
 import { db } from "@/lib/db";
 import { requireTenantSession } from "@/lib/tenant";
 import { ForkliftMedia } from "@/components/ForkliftMedia";
+import { resolveForkliftImageUrl } from "@/lib/supabase-storage";
 import { ForkliftStatusBadge } from "@/components/ui/StatusBadge";
 import { startChecklistAction } from "@/lib/actions/checklist";
 import { QrCode } from "lucide-react";
@@ -13,6 +14,13 @@ export default async function SelecionarEquipamentoPage() {
     include: { forkliftType: true, energyType: true },
     orderBy: { code: "asc" },
   });
+
+  const forkliftsWithImages = await Promise.all(
+    forklifts.map(async (forklift) => ({
+      ...forklift,
+      imageUrl: await resolveForkliftImageUrl(forklift.imageUrl, session.user.organizationId),
+    })),
+  );
 
   return (
     <main className="mx-auto max-w-5xl px-4 py-8">
@@ -44,11 +52,16 @@ export default async function SelecionarEquipamentoPage() {
         </div>
       ) : (
         <div className="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {forklifts.map((f) => (
+          {forkliftsWithImages.map((f) => (
             <div key={f.id} className="animate-rise-in flex flex-col border border-black/10 bg-white">
               <div className="relative h-40 bg-tan">
                 <ForkliftMedia
-                  imageUrl={f.imageUrl}
+                  imageUrl={
+                    f.imageUrl ??
+                    (f.code === "EMP-001"
+                      ? "https://media-live2.prod.scw.jungheinrichcloud.com/resource/image/103962/portrait_ratio1x1/750/750/92932f3f2fdd70eafea033ced146f9d5/614761D0CD0B84A6661542C60285F007/stage-etv-etm-214-216.jpg"
+                      : null)
+                  }
                   typeKey={f.forkliftType.key}
                   alt={`${f.brand} ${f.model}`}
                   fit="contain"

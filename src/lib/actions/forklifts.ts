@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { requireAdmin } from "@/lib/actions/admin-guard";
 import { logAudit } from "@/lib/audit";
-import { saveForkliftImage } from "@/lib/uploads";
+import { removeForkliftImage, saveForkliftImage } from "@/lib/uploads";
 
 export async function createForkliftAction(formData: FormData) {
   const session = await requireAdmin();
@@ -29,17 +29,26 @@ export async function createForkliftAction(formData: FormData) {
   const photo = formData.get("photo") as File | null;
   const imageUrl = photo && photo.size > 0 ? await saveForkliftImage(photo, session.user.organizationId) : null;
 
-  const forklift = await db.forklift.create({
-    data: { ...data, imageUrl, organizationId: session.user.organizationId },
-  });
+  try {
+    const forklift = await db.forklift.create({
+      data: { ...data, imageUrl, organizationId: session.user.organizationId },
+    });
 
-  await logAudit({
-    userId: session.user.id,
-    entityType: "Forklift",
-    entityId: forklift.id,
-    action: "CREATE",
-    changes: { ...data, imageUrl },
-  });
+    await logAudit({
+      userId: session.user.id,
+      entityType: "Forklift",
+      entityId: forklift.id,
+      action: "CREATE",
+      changes: { ...data, imageUrl },
+    });
+  } catch (error) {
+    if (imageUrl) {
+      await removeForkliftImage(imageUrl, session.user.organizationId).catch((cleanupError) =>
+        console.error("Falha ao limpar imagem após erro no cadastro:", cleanupError),
+      );
+    }
+    throw error;
+  }
 
   revalidatePath("/admin/empilhadeiras");
   redirect("/admin/empilhadeiras");
@@ -72,15 +81,30 @@ export async function updateForkliftAction(id: string, formData: FormData) {
       ? null
       : owned.imageUrl;
 
-  await db.forklift.update({ where: { id }, data: { ...data, imageUrl } });
+  try {
+    await db.forklift.update({ where: { id }, data: { ...data, imageUrl } });
 
-  await logAudit({
-    userId: session.user.id,
-    entityType: "Forklift",
-    entityId: id,
-    action: "UPDATE",
-    changes: { ...data, imageUrl },
-  });
+    await logAudit({
+      userId: session.user.id,
+      entityType: "Forklift",
+      entityId: id,
+      action: "UPDATE",
+      changes: { ...data, imageUrl },
+    });
+  } catch (error) {
+    if (photo && photo.size > 0 && imageUrl && imageUrl !== owned.imageUrl) {
+      await removeForkliftImage(imageUrl, session.user.organizationId).catch((cleanupError) =>
+        console.error("Falha ao limpar nova imagem após erro na atualização:", cleanupError),
+      );
+    }
+    throw error;
+  }
+
+  if (owned.imageUrl && owned.imageUrl !== imageUrl) {
+    await removeForkliftImage(owned.imageUrl, session.user.organizationId).catch((cleanupError) =>
+      console.error("Falha ao remover imagem antiga da empilhadeira:", cleanupError),
+    );
+  }
 
   revalidatePath("/admin/empilhadeiras");
   revalidatePath(`/admin/empilhadeiras/${id}`);

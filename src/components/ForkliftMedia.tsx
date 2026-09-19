@@ -3,10 +3,10 @@ import clsx from "clsx";
 import { ForkliftGraphic } from "@/components/ForkliftGraphic";
 
 /**
- * Single entry point for equipment imagery across the product. Once a real
- * photo is registered on `forklift.imageUrl` it takes over automatically —
- * nothing else in the UI needs to change. Until then it falls back to the
- * vector illustration so every screen is already asset-ready.
+ * Single entry point for equipment imagery across the product. Server pages
+ * resolve private Supabase object paths into short-lived signed URLs before
+ * passing them here. Until a photo exists it falls back to the vector
+ * illustration so every screen remains asset-ready.
  */
 export function ForkliftMedia({
   imageUrl,
@@ -22,9 +22,8 @@ export function ForkliftMedia({
   fit?: "cover" | "contain";
 }) {
   if (imageUrl) {
-    // External URLs (S3/R2 photos, admin-supplied links) skip Next's image
-    // optimizer — its domain allowlist can't be pre-configured for an
-    // S3_PUBLIC_URL_BASE the deployer sets after the fact.
+    // Signed Supabase URLs are external to the Next.js origin, so skip the
+    // optimizer and avoid coupling deployment config to an image hostname.
     const isExternal = /^https?:\/\//.test(imageUrl);
     return (
       <div className={clsx("relative overflow-hidden", className)}>

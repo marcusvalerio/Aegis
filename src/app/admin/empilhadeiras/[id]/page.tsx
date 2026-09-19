@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { ForkliftMedia } from "@/components/ForkliftMedia";
+import { resolveForkliftImageUrl } from "@/lib/supabase-storage";
 import { ForkliftStatusBadge, SeverityBadge, NonConformityStatusBadge } from "@/components/ui/StatusBadge";
 import { Metric, MetricRow } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -31,6 +32,11 @@ export default async function ForkliftDetailPage({ params }: { params: Promise<{
 
   if (!forklift) notFound();
 
+  const resolvedImageUrl = await resolveForkliftImageUrl(
+    forklift.imageUrl,
+    session.user.organizationId,
+  );
+
   const [forkliftTypes, energyTypes] = await Promise.all([
     db.forkliftType.findMany({ orderBy: { name: "asc" } }),
     db.energyType.findMany({ orderBy: { name: "asc" } }),
@@ -47,7 +53,7 @@ export default async function ForkliftDetailPage({ params }: { params: Promise<{
         <div className="flex flex-1 items-center gap-4">
           <div className="h-20 w-20 shrink-0 border border-black/10 bg-tan">
             <ForkliftMedia
-              imageUrl={forklift.imageUrl}
+              imageUrl={resolvedImageUrl}
               typeKey={forklift.forkliftType.key}
               alt={`${forklift.brand} ${forklift.model}`}
               fit="contain"
@@ -79,7 +85,7 @@ export default async function ForkliftDetailPage({ params }: { params: Promise<{
             </summary>
             <div className="absolute right-0 z-20 mt-2 w-[380px] border border-black/10 bg-white p-5 shadow-lg">
               <ForkliftForm
-                forklift={forklift}
+                forklift={{ ...forklift, imageUrl: resolvedImageUrl }}
                 forkliftTypes={forkliftTypes}
                 energyTypes={energyTypes}
                 action={updateForkliftAction.bind(null, forklift.id)}

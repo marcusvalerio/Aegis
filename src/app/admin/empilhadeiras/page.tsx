@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { db } from "@/lib/db";
 import { ForkliftMedia } from "@/components/ForkliftMedia";
+import { resolveForkliftImageUrl } from "@/lib/supabase-storage";
 import { ForkliftStatusBadge } from "@/components/ui/StatusBadge";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Plus } from "lucide-react";
@@ -44,6 +45,13 @@ export default async function EmpilhadeirasPage({
     },
     orderBy: { code: "asc" },
   });
+
+  const forkliftsWithImages = await Promise.all(
+    forklifts.map(async (forklift) => ({
+      ...forklift,
+      imageUrl: await resolveForkliftImageUrl(forklift.imageUrl, session.user.organizationId),
+    })),
+  );
 
   return (
     <main className="p-6 md:p-10">
@@ -96,7 +104,7 @@ export default async function EmpilhadeirasPage({
               </tr>
             </thead>
             <tbody>
-              {forklifts.map((f) => {
+              {forkliftsWithImages.map((f) => {
                 const lastChecklist = f.checklists[0];
                 return (
                   <tr key={f.id} className="border-b border-black/5 last:border-0 hover:bg-tan/40">

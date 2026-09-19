@@ -1,29 +1,10 @@
 import { mkdir, writeFile } from "fs/promises";
 import path from "path";
-import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { cuid } from "@/lib/cuid";
+import { deleteForkliftObject, uploadForkliftObject } from "@/lib/supabase-storage";
 
 const ALLOWED_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/heic"]);
 const MAX_SIZE = 8 * 1024 * 1024;
-
-const S3_BUCKET = process.env.S3_BUCKET;
-const S3_ENDPOINT = process.env.S3_ENDPOINT;
-const S3_REGION = process.env.S3_REGION ?? "auto";
-const S3_ACCESS_KEY_ID = process.env.S3_ACCESS_KEY_ID;
-const S3_SECRET_ACCESS_KEY = process.env.S3_SECRET_ACCESS_KEY;
-const S3_PUBLIC_URL_BASE = process.env.S3_PUBLIC_URL_BASE;
-
-const s3IsConfigured = Boolean(
-  S3_BUCKET && S3_ENDPOINT && S3_ACCESS_KEY_ID && S3_SECRET_ACCESS_KEY && S3_PUBLIC_URL_BASE,
-);
-
-const s3Client = s3IsConfigured
-  ? new S3Client({
-      region: S3_REGION,
-      endpoint: S3_ENDPOINT,
-      credentials: { accessKeyId: S3_ACCESS_KEY_ID!, secretAccessKey: S3_SECRET_ACCESS_KEY! },
-    })
-  : null;
 
 function extensionFor(type: string) {
   if (type === "image/png") return "png";
@@ -34,8 +15,7 @@ function extensionFor(type: string) {
 
 /**
  * Confirms the file's actual bytes match a known image format instead of
- * trusting the browser-reported MIME type or the filename extension, both
- * of which are trivially spoofable.
+ * trusting the browser-reported MIME type or the filename extension.
  */
 function matchesImageSignature(type: string, bytes: Buffer): boolean {
   if (bytes.length < 12) return false;
@@ -78,50 +58,57 @@ async function readAndValidateImage(file: File): Promise<Buffer> {
   return buffer;
 }
 
-async function persistImage(buffer: Buffer, type: string, keyPrefix: string): Promise<string> {
+async function persistImage(
+  buffer: Buffer,
+  type: string,
+  keyPrefix: string,
+  localFallbackPrefix: string,
+): Promise<string> {
   const filename = `${cuid()}.${extensionFor(type)}`;
   const key = `${keyPrefix}/${filename}`;
 
-  if (s3Client) {
-    await s3Client.send(
-      new PutObjectCommand({ Bucket: S3_BUCKET, Key: key, Body: buffer, ContentType: type }),
-    );
-    return `${S3_PUBLIC_URL_BASE!.replace(/\/$/, "")}/${key}`;
+  if (process.env.SUPABASE_URL && (process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET_KEY)) {
+    return uploadForkliftObject(key, buffer, type);
   }
 
   if (process.env.NODE_ENV === "production") {
     throw new Error(
-      "Armazenamento de imagens não configurado. Defina S3_BUCKET, S3_ENDPOINT, S3_ACCESS_KEY_ID, " +
-        "S3_SECRET_ACCESS_KEY e S3_PUBLIC_URL_BASE antes de operar em produção — sem isso as imagens " +
-        "seriam perdidas a cada reinício/deploy.",
+      "Armazenamento de imagens não configurado. Defina SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY (ou SUPABASE_SECRET_KEY) antes de operar em produção.",
     );
   }
 
-  const uploadDir = path.join(process.cwd(), "public", "uploads", keyPrefix);
+  const uploadDir = path.join(process.cwd(), "public", "uploads", localFallbackPrefix);
   await mkdir(uploadDir, { recursive: true });
   await writeFile(path.join(uploadDir, filename), buffer);
-  return `/uploads/${key}`;
+  return `/uploads/${localFallbackPrefix}/${filename}`;
 }
 
 /**
- * Persists a non-conformity photo and returns its public URL.
- *
- * Backed by S3-compatible object storage (R2, S3, etc.) when S3_* env vars
- * are set — required in production, since local disk in a container is
- * ephemeral and wiped on every redeploy/restart. Falls back to writing into
- * public/uploads only for local development without cloud credentials.
+ * Persists a non-conformity photo. In production this uses the same private
+ * Supabase bucket as forklift photos, with a separate organization namespace.
  */
-export async function saveUploadedPhoto(file: File): Promise<string> {
+export async function saveUploadedPhoto(file: File, organizationId: string): Promise<string> {
   const buffer = await readAndValidateImage(file);
-  return persistImage(buffer, file.type, "nc-photos");
+  return persistImage(buffer, file.type, `nc-photos/${organizationId}`, `nc-photos/${organizationId}`);
 }
 
 /**
- * Persists a forklift's identification photo, namespaced under the owning
- * organization's id so objects from different tenants never share a path.
- * Same storage backend and production guarantees as saveUploadedPhoto.
+ * Persists a forklift identification photo under the owning organization.
+ * The returned value is an object path, not a public URL.
  */
 export async function saveForkliftImage(file: File, organizationId: string): Promise<string> {
   const buffer = await readAndValidateImage(file);
-  return persistImage(buffer, file.type, `forklift-photos/${organizationId}`);
+  return persistImage(buffer, file.type, organizationId, `forklift-photos/${organizationId}`);
+}
+
+/**
+ * Removes a Supabase forklift object after the database reference is no
+ * longer needed. Local development files are left alone because they are
+ * disposable and are outside the cloud bucket.
+ */
+export async function removeForkliftImage(imagePath: string | null | undefined, organizationId: string) {
+  if (!imagePath || !imagePath.startsWith(`${organizationId}/`)) return;
+  if (!process.env.SUPABASE_URL || !(process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET_KEY)) return;
+
+  await deleteForkliftObject(imagePath);
 }
