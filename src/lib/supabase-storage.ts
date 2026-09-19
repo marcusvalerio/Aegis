@@ -51,7 +51,7 @@ export async function uploadForkliftObject(
       "Cache-Control": "3600",
       "x-upsert": "false",
     }),
-    body,
+    body: body as unknown as BodyInit,
   });
 
   await assertResponse(response, "enviar a imagem");
