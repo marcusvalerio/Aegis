@@ -52,7 +52,7 @@ export default async function SelecionarEquipamentoPage() {
         </div>
       ) : (
         <div className="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {forklifts.map((f) => (
+          {forkliftsWithImages.map((f) => (
             <div key={f.id} className="animate-rise-in flex flex-col border border-black/10 bg-white">
               <div className="relative h-40 bg-tan">
                 <ForkliftMedia
