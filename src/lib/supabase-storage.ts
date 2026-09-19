@@ -116,7 +116,12 @@ export async function resolveForkliftImageUrl(
     return null;
   }
 
-  return createForkliftSignedUrl(imagePath);
+  try {
+    return await createForkliftSignedUrl(imagePath);
+  } catch (error) {
+    console.error("Não foi possível resolver a imagem da empilhadeira:", error);
+    return null;
+  }
 }
 
 export function isSupabaseForkliftPath(

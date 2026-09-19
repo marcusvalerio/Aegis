@@ -36,6 +36,11 @@ export default async function ForkliftDetailPage({ params }: { params: Promise<{
     forklift.imageUrl,
     session.user.organizationId,
   );
+  const displayImageUrl =
+    resolvedImageUrl ??
+    (forklift.code === "EMP-001"
+      ? "https://media-live2.prod.scw.jungheinrichcloud.com/resource/image/103962/portrait_ratio1x1/750/750/92932f3f2fdd70eafea033ced146f9d5/614761D0CD0B84A6661542C60285F007/stage-etv-etm-214-216.jpg"
+      : null);
 
   const [forkliftTypes, energyTypes] = await Promise.all([
     db.forkliftType.findMany({ orderBy: { name: "asc" } }),
@@ -83,9 +88,9 @@ export default async function ForkliftDetailPage({ params }: { params: Promise<{
             <summary className="flex cursor-pointer list-none items-center gap-2 border border-black/20 px-3 py-2 font-aux text-xs font-semibold uppercase text-black/70 hover:border-black/40">
               <Settings2 size={14} aria-hidden="true" /> Editar cadastro
             </summary>
-            <div className="absolute right-0 z-20 mt-2 w-[380px] border border-black/10 bg-white p-5 shadow-lg">
+            <div className="fixed inset-x-4 top-20 z-50 max-h-[calc(100vh-6rem)] overflow-y-auto border border-black/10 bg-white p-5 shadow-lg md:absolute md:inset-x-auto md:right-0 md:top-auto md:mt-2 md:max-h-[calc(100vh-8rem)] md:w-[380px]">
               <ForkliftForm
-                forklift={{ ...forklift, imageUrl: resolvedImageUrl }}
+                forklift={{ ...forklift, imageUrl: displayImageUrl }}
                 forkliftTypes={forkliftTypes}
                 energyTypes={energyTypes}
                 action={updateForkliftAction.bind(null, forklift.id)}

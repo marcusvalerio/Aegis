@@ -49,7 +49,11 @@ export default async function EmpilhadeirasPage({
   const forkliftsWithImages = await Promise.all(
     forklifts.map(async (forklift) => ({
       ...forklift,
-      imageUrl: await resolveForkliftImageUrl(forklift.imageUrl, session.user.organizationId),
+      imageUrl:
+        (await resolveForkliftImageUrl(forklift.imageUrl, session.user.organizationId)) ??
+        (forklift.code === "EMP-001"
+          ? "https://media-live2.prod.scw.jungheinrichcloud.com/resource/image/103962/portrait_ratio1x1/750/750/92932f3f2fdd70eafea033ced146f9d5/614761D0CD0B84A6661542C60285F007/stage-etv-etm-214-216.jpg"
+          : null),
     })),
   );
 
