@@ -104,7 +104,7 @@ export default async function EmpilhadeirasPage({
               </tr>
             </thead>
             <tbody>
-              {forklifts.map((f) => {
+              {forkliftsWithImages.map((f) => {
                 const lastChecklist = f.checklists[0];
                 return (
                   <tr key={f.id} className="border-b border-black/5 last:border-0 hover:bg-tan/40">
