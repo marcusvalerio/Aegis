@@ -2,7 +2,7 @@ import clsx from "clsx";
 
 export function MetricRow({ children }: { children: React.ReactNode }) {
   return (
-    <div className="grid grid-cols-2 border-y border-black/10 md:grid-cols-4">
+    <div className="grid grid-cols-2 gap-px border-y border-black/10 bg-black/10 md:grid-cols-4">
       {children}
     </div>
   );
@@ -25,7 +25,7 @@ export function Metric({
   tone?: keyof typeof METRIC_TONE;
 }) {
   return (
-    <div className="min-w-0 border-black/10 px-4 py-5 first:border-r first:pl-0 [&:nth-child(even)]:border-l [&:nth-child(n+3)]:border-t md:border-t-0 md:px-6 md:first:pl-0 md:[&:nth-child(even)]:border-l md:[&:nth-child(n+3)]:border-l md:[&:nth-child(n+3)]:border-t-0">
+    <div className="min-w-0 bg-tan px-4 py-5 md:px-6">
       <div className={clsx("font-display text-4xl font-bold tabular-nums lg:text-5xl", METRIC_TONE[tone])}>
         {value}
       </div>
