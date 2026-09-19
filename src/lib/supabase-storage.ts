@@ -6,7 +6,7 @@ function config() {
 
   if (!url || !key) {
     throw new Error(
-      "Armazenamento de imagens não configurado. Defina SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY (ou SUPABASE_SECRET_KEY) antes de operar com imagens.",
+      "Armazenamento de imagens não configurado. Defina SUPABASE_URL e SUPABASE_SECRET_KEY (ou SUPABASE_SERVICE_ROLE_KEY) antes de operar com imagens.",
     );
   }
 
