@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { ForkliftMedia } from "@/components/ForkliftMedia";
+import { resolveForkliftImageUrl } from "@/lib/supabase-storage";
 import { ForkliftStatusBadge, SeverityBadge, NonConformityStatusBadge } from "@/components/ui/StatusBadge";
 import { Metric, MetricRow } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
