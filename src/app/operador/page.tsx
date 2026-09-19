@@ -18,7 +18,11 @@ export default async function SelecionarEquipamentoPage() {
   const forkliftsWithImages = await Promise.all(
     forklifts.map(async (forklift) => ({
       ...forklift,
-      imageUrl: await resolveForkliftImageUrl(forklift.imageUrl, session.user.organizationId),
+      imageUrl:
+        (await resolveForkliftImageUrl(forklift.imageUrl, session.user.organizationId)) ??
+        (forklift.code === "EMP-001"
+          ? "https://media-live2.prod.scw.jungheinrichcloud.com/resource/image/103962/portrait_ratio1x1/750/750/92932f3f2fdd70eafea033ced146f9d5/614761D0CD0B84A6661542C60285F007/stage-etv-etm-214-216.jpg"
+          : null),
     })),
   );
 
@@ -56,12 +60,7 @@ export default async function SelecionarEquipamentoPage() {
             <div key={f.id} className="animate-rise-in flex flex-col border border-black/10 bg-white">
               <div className="relative h-40 bg-tan">
                 <ForkliftMedia
-                  imageUrl={
-                    f.imageUrl ??
-                    (f.code === "EMP-001"
-                      ? "https://media-live2.prod.scw.jungheinrichcloud.com/resource/image/103962/portrait_ratio1x1/750/750/92932f3f2fdd70eafea033ced146f9d5/614761D0CD0B84A6661542C60285F007/stage-etv-etm-214-216.jpg"
-                      : null)
-                  }
+                  imageUrl={f.imageUrl}
                   typeKey={f.forkliftType.key}
                   alt={`${f.brand} ${f.model}`}
                   fit="contain"
