@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { db } from "@/lib/db";
 import { ForkliftMedia } from "@/components/ForkliftMedia";
+import { resolveForkliftImageUrl } from "@/lib/supabase-storage";
 import { ForkliftStatusBadge } from "@/components/ui/StatusBadge";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Plus } from "lucide-react";
