@@ -85,7 +85,7 @@ export default async function ForkliftDetailPage({ params }: { params: Promise<{
             </summary>
             <div className="absolute right-0 z-20 mt-2 w-[380px] border border-black/10 bg-white p-5 shadow-lg">
               <ForkliftForm
-                forklift={forklift}
+                forklift={{ ...forklift, imageUrl: resolvedImageUrl }}
                 forkliftTypes={forkliftTypes}
                 energyTypes={energyTypes}
                 action={updateForkliftAction.bind(null, forklift.id)}
