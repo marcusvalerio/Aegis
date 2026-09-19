@@ -46,6 +46,13 @@ export default async function EmpilhadeirasPage({
     orderBy: { code: "asc" },
   });
 
+  const forkliftsWithImages = await Promise.all(
+    forklifts.map(async (forklift) => ({
+      ...forklift,
+      imageUrl: await resolveForkliftImageUrl(forklift.imageUrl, session.user.organizationId),
+    })),
+  );
+
   return (
     <main className="p-6 md:p-10">
       <div className="flex items-center justify-between">
