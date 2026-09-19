@@ -15,6 +15,13 @@ export default async function SelecionarEquipamentoPage() {
     orderBy: { code: "asc" },
   });
 
+  const forkliftsWithImages = await Promise.all(
+    forklifts.map(async (forklift) => ({
+      ...forklift,
+      imageUrl: await resolveForkliftImageUrl(forklift.imageUrl, session.user.organizationId),
+    })),
+  );
+
   return (
     <main className="mx-auto max-w-5xl px-4 py-8">
       <div className="flex items-start justify-between gap-4">
