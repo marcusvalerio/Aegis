@@ -1,6 +1,7 @@
 import { db } from "@/lib/db";
 import { requireTenantSession } from "@/lib/tenant";
 import { ForkliftMedia } from "@/components/ForkliftMedia";
+import { resolveForkliftImageUrl } from "@/lib/supabase-storage";
 import { ForkliftStatusBadge } from "@/components/ui/StatusBadge";
 import { startChecklistAction } from "@/lib/actions/checklist";
 import { QrCode } from "lucide-react";
