@@ -10,7 +10,7 @@ function config() {
     );
   }
 
-  return { url, key };
+  return { url, key, isLegacy: !process.env.SUPABASE_SECRET_KEY && Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY) };
 }
 
 function objectUrl(baseUrl: string, path: string) {
@@ -20,10 +20,10 @@ function objectUrl(baseUrl: string, path: string) {
     .join("/")}`;
 }
 
-function headers(key: string, extra?: HeadersInit) {
+function headers(key: string, isLegacy: boolean, extra?: HeadersInit) {
   return {
-    Authorization: `Bearer ${key}`,
     apikey: key,
+    ...(isLegacy ? { Authorization: `Bearer ${key}` } : {}),
     ...extra,
   };
 }
@@ -42,11 +42,11 @@ export async function uploadForkliftObject(
   body: Buffer,
   contentType: string,
 ): Promise<string> {
-  const { url, key } = config();
+  const { url, key, isLegacy } = config();
 
   const response = await fetch(objectUrl(url, path), {
     method: "POST",
-    headers: headers(key, {
+    headers: headers(key, isLegacy, {
       "Content-Type": contentType,
       "Cache-Control": "3600",
       "x-upsert": "false",
@@ -59,18 +59,18 @@ export async function uploadForkliftObject(
 }
 
 export async function deleteForkliftObject(path: string): Promise<void> {
-  const { url, key } = config();
+  const { url, key, isLegacy } = config();
 
   const response = await fetch(objectUrl(url, path), {
     method: "DELETE",
-    headers: headers(key),
+    headers: headers(key, isLegacy),
   });
 
   await assertResponse(response, "remover a imagem");
 }
 
 export async function createForkliftSignedUrl(path: string, expiresIn = 60 * 60): Promise<string> {
-  const { url, key } = config();
+  const { url, key, isLegacy } = config();
   const endpoint = `${url}/storage/v1/object/sign/${BUCKET}/${path
     .split("/")
     .map(encodeURIComponent)
@@ -78,7 +78,7 @@ export async function createForkliftSignedUrl(path: string, expiresIn = 60 * 60)
 
   const response = await fetch(endpoint, {
     method: "POST",
-    headers: headers(key, { "Content-Type": "application/json" }),
+    headers: headers(key, isLegacy, { "Content-Type": "application/json" }),
     body: JSON.stringify({ expiresIn }),
   });
 
